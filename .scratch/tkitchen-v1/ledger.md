@@ -1,6 +1,6 @@
 # Ledger: tkitchen v1
 
-Status: **paused by the user, 2026-11-22**, before the first question. Resume with `pick-flow: resume grill .scratch/tkitchen-v1/`. Scope for the next session: **git only** (K9 settled).
+Status: **paused by the user, 2026-11-22**, before the first question. Resume with `pick-flow: resume grill .scratch/tkitchen-v1/`. Scope for the next session: **git only** (K9 settled). The kitchen's slice of the vault plan: `plan.md`.
 
 Requirement: a standalone package, **tkitchen** (the kitchen), that takes orders (**Triggers**) from many producers, routes each to the stations (consumers) that handle it, and records what each station did. It is the event layer under the durable Pi (vault note "Durable Pi orchestrating every branch": the abstraction section, Corrections 1-2, Direction 2026-11-06). Loaded by pick-flow -> grill-with-docs, 2026-11-22.
 
