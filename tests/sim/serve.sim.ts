@@ -4,7 +4,8 @@ import { serve } from "../../src/application/serve.ts";
 import type { ServeResult } from "../../src/application/serve.ts";
 import { SimWorld } from "./world/world.ts";
 import { SimLock, SimLockSystem } from "./doubles/sim-lock.ts";
-import { CrashError, crashingGit } from "./faults/crash.ts";
+import { CrashError, CrashInjector } from "./faults/crash.ts";
+import { pumpRound } from "./scenarios/run-round.ts";
 import { groundTruth } from "./oracles/ground-truth.ts";
 import { incompleteChangesNothing } from "./oracles/incomplete-changes-nothing.ts";
 import { progress } from "./oracles/progress.ts";
@@ -122,41 +123,101 @@ describe("serve loop", () => {
     } finally { world.dispose(); }
   }, 120000);
 
-  it("crash and restart keep the store consistent across the batch", async () => {
-    for (let seed = 1; seed <= 20; seed++) {
-      const world = new SimWorld(7300 + seed);
+  it("crash at every port boundary and restart keep the store consistent", async () => {
+    const measureWorld = new SimWorld(7500);
+    let total = 0;
+    try {
+      seedWorld(measureWorld);
+      await pumpRound(measureWorld);
+      measureWorld.remote.commitOn("C");
+      const counter = new CrashInjector();
+      let measureStop = false;
+      await drive(measureWorld, serve({
+        config: counter.wrapConfig(measureWorld.config), store: counter.wrapStore(measureWorld.store), clock: measureWorld.clock, machine: "sim",
+        makeGit: () => counter.wrapGit(measureWorld.remote), forge: counter.wrapForge(measureWorld.forge), scheduler: counter.wrapScheduler(measureWorld.clock),
+        lock: counter.wrapLock(new SimLock(new SimLockSystem(), 7501)),
+        shouldStop: () => measureStop,
+        onCycle: () => { measureStop = true; },
+      }));
+      total = counter.count;
+    } finally { measureWorld.dispose(); }
+    expect(total).toBeGreaterThan(10);
+    for (let position = 0; position < total; position++) {
+      const world = new SimWorld(7600 + position);
       try {
         seedWorld(world);
+        await pumpRound(world);
         world.remote.commitOn("C");
-        const system = new SimLockSystem();
-        const crashedLock = new SimLock(system, 7300 + seed);
         const snapshotBefore = world.snapshotStore();
-        const afterCalls = seed % 5;
+        const eventsBefore = world.store.listTriggers().length;
+        const system = new SimLockSystem();
+        const crashedLock = new SimLock(system, 7600 + position);
+        const injector = new CrashInjector({ afterCalls: position, onCrash: () => { crashedLock.crash(); } });
         const crashed = serve({
-          config: world.config, store: world.store, clock: world.clock, machine: "sim",
-          makeGit: () => crashingGit(world.remote, afterCalls, () => { crashedLock.crash(); }),
-          forge: world.forge, scheduler: world.clock, lock: crashedLock,
+          config: injector.wrapConfig(world.config), store: injector.wrapStore(world.store), clock: world.clock, machine: "sim",
+          makeGit: () => injector.wrapGit(world.remote), forge: injector.wrapForge(world.forge), scheduler: injector.wrapScheduler(world.clock),
+          lock: injector.wrapLock(crashedLock),
         });
-        await expect(drive(world, crashed)).rejects.toBeInstanceOf(CrashError);
-        expect(world.snapshotStore()).toBe(snapshotBefore);
-        world.incompleteSnapshot = snapshotBefore;
-        expect(incompleteChangesNothing.check(world), "seed " + seed).toEqual([]);
-        world.incompleteSnapshot = null;
-        expect(system.holderPid(), "seed " + seed).toBe(7300 + seed);
+        await expect(drive(world, crashed), "position " + position).rejects.toBeInstanceOf(CrashError);
+        const eventsAfterCrash = world.store.listTriggers().length;
+        expect([eventsBefore, eventsBefore + 1], "position " + position).toContain(eventsAfterCrash);
+        if (eventsAfterCrash === eventsBefore) {
+          expect(world.snapshotStore(), "position " + position).toBe(snapshotBefore);
+          world.incompleteSnapshot = snapshotBefore;
+          expect(incompleteChangesNothing.check(world), "position " + position).toEqual([]);
+          world.incompleteSnapshot = null;
+        } else {
+          expect(groundTruth.check(world), "position " + position).toEqual([]);
+        }
         let stop = false;
         const restarted = await drive(world, serve({
           config: world.config, store: world.store, clock: world.clock, machine: "sim",
           makeGit: () => world.remote, forge: world.forge, scheduler: world.clock,
-          lock: new SimLock(system, 7400 + seed),
+          lock: new SimLock(system, 7700 + position),
           shouldStop: () => stop,
           onCycle: () => { stop = true; },
         }));
-        expect(restarted.kind, "seed " + seed).toBe("stopped");
-        expect(system.holderPid(), "seed " + seed).toBeNull();
-        expect(groundTruth.check(world), "seed " + seed).toEqual([]);
-        expect(progress.check(world), "seed " + seed).toEqual([]);
-        expect(singleWriter.checkSystem(system), "seed " + seed).toEqual([]);
+        expect(restarted.kind, "position " + position).toBe("stopped");
+        expect(system.holderPid(), "position " + position).toBeNull();
+        expect(world.store.listTriggers().length, "position " + position).toBe(eventsBefore + 1);
+        expect(groundTruth.check(world), "position " + position).toEqual([]);
+        expect(progress.check(world), "position " + position).toEqual([]);
+        expect(singleWriter.checkSystem(system), "position " + position).toEqual([]);
       } finally { world.dispose(); }
     }
   }, 300000);
+
+  it("crash at the scheduler boundary after a committed Round restarts without duplicates", async () => {
+    const world = new SimWorld(7800);
+    try {
+      seedWorld(world);
+      await pumpRound(world);
+      world.remote.commitOn("C");
+      const system = new SimLockSystem();
+      const crashedLock = new SimLock(system, 7801);
+      const injector = new CrashInjector({ crashAtLabel: "scheduler.sleep", onCrash: () => { crashedLock.crash(); } });
+      const crashed = serve({
+        config: injector.wrapConfig(world.config), store: injector.wrapStore(world.store), clock: world.clock, machine: "sim",
+        makeGit: () => injector.wrapGit(world.remote), forge: injector.wrapForge(world.forge), scheduler: injector.wrapScheduler(world.clock),
+        lock: injector.wrapLock(crashedLock),
+      });
+      await expect(drive(world, crashed)).rejects.toBeInstanceOf(CrashError);
+      expect(world.store.listTriggers()).toHaveLength(1);
+      expect(groundTruth.check(world)).toEqual([]);
+      let stop = false;
+      const restarted = await drive(world, serve({
+        config: world.config, store: world.store, clock: world.clock, machine: "sim",
+        makeGit: () => world.remote, forge: world.forge, scheduler: world.clock,
+        lock: new SimLock(system, 7802),
+        shouldStop: () => stop,
+        onCycle: () => { stop = true; },
+      }));
+      expect(restarted.kind).toBe("stopped");
+      expect(world.store.listTriggers()).toHaveLength(1);
+      expect(world.store.listDispositions()).toHaveLength(1);
+      expect(groundTruth.check(world)).toEqual([]);
+      expect(progress.check(world)).toEqual([]);
+      expect(singleWriter.checkSystem(system)).toEqual([]);
+    } finally { world.dispose(); }
+  }, 120000);
 });
