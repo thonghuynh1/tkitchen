@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { existsSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
@@ -79,6 +79,60 @@ describe("FileLock", () => {
     expect(await lock.acquire()).toBe("acquired");
     await lock.release();
   });
+
+  it("recovers a guard whose owner pid is dead", async () => {
+    const home = makeHome();
+    const lock = new FileLock(home);
+    writeFileSync(lock.path, JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
+    writeFileSync(join(home, "kitchen.lock.guard"), String(await deadPid()));
+    expect(await lock.acquire()).toBe("acquired");
+    await lock.release();
+    expect(existsSync(join(home, "kitchen.lock.guard"))).toBe(false);
+  });
+
+  it("recovers an ownerless guard directory left by a crashed takeover", async () => {
+    const home = makeHome();
+    const lock = new FileLock(home);
+    writeFileSync(lock.path, JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
+    const guardPath = join(home, "kitchen.lock.guard");
+    mkdirSync(guardPath);
+    const longAgo = new Date(Date.now() - 60000);
+    utimesSync(guardPath, longAgo, longAgo);
+    expect(await lock.acquire()).toBe("acquired");
+    await lock.release();
+  });
+
+  it("a successor process acquires after the guard owner is killed with no pid published", async () => {
+    const home = makeHome();
+    const stalePath = join(home, "kitchen.lock");
+    writeFileSync(stalePath, JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
+    const guardPath = join(home, "kitchen.lock.guard");
+    writeFileSync(guardPath, "");
+    const longAgo = new Date(Date.now() - 60000);
+    utimesSync(guardPath, longAgo, longAgo);
+    const contender = startContender(home);
+    try {
+      contender.child.stdin?.write("go\n");
+      const result = await contender.result;
+      expect(result.result).toBe("acquired");
+      contender.child.stdin?.write("release\n");
+      await contender.exited;
+      expect(existsSync(stalePath)).toBe(false);
+    } finally {
+      contender.child.kill();
+    }
+  }, 60000);
+
+  it("does not steal a guard held by a live pid", async () => {
+    const home = makeHome();
+    const lock = new FileLock(home);
+    writeFileSync(lock.path, JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
+    const guardPath = join(home, "kitchen.lock.guard");
+    writeFileSync(guardPath, String(process.pid));
+    expect(await lock.acquire()).toBe("held");
+    expect(readFileSync(guardPath, "utf8")).toBe(String(process.pid));
+    rmSync(guardPath, { force: true });
+  }, 60000);
 
   it("concurrent stale takeover has exactly one winner across processes", async () => {
     for (let round = 0; round < 10; round++) {
