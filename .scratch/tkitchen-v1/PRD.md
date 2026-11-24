@@ -283,3 +283,18 @@ None.
 - Grounding: `.scratch/tkitchen-v1/grounding.md`. Draft and check: `quick-plan.md`, `verification.md`. Glossary: `CONTEXT.md`.
 - Refinements made while writing this PRD (recorded in `coverage-ledger.md` as findings): `round_status` table (home for the last complete Round time DEC-009 shows); fork PRs ignored (DEC-007); default branch from `ls-remote --symref` and the descendant exception in the Watched-set rule (DEC-008).
 - The vault note stays the source of truth for the whole durable Pi plan; `plan.md` is its kitchen slice.
+
+## Indicate outcome
+
+Slice 1 (issues 01-09, plus follow-ups 11 and 12), closed 2026-11-24. Journal: [journal.md](journal.md). Report: [verification-slice-1.md](verification-slice-1.md).
+
+- Config bases and notices: Delivered
+- Automatic base from reflog: Delivered
+- GitHub PR targets via gh: Delivered (accepted on harness evidence; Jev inconclusive after the FB-3 fix)
+- Unreachable remote, incomplete Round: Delivered
+- Serve loop and single-instance lock: Delivered (accepted on harness evidence; Jev inconclusive after the FB-1/FB-2 fixes)
+- Sign-in launch task: Delivered in the harness; the real sign-in is deferred to issue 10 (HITL)
+- Export for aiNho: Delivered
+- Amendment: D-007 allows `"forge": "none"` per repo (issue 11, user decision 2026-11-24).
+- Deferred: issue 10, the HITL smoke test on both machines.
+

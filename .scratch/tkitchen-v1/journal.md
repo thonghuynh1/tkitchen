@@ -72,3 +72,7 @@
 ### Map updates
 - Parked: read the reflog once per branch, or straight from `.git/logs`, to cut about 120 git calls per Round on tstack (about 11 s → about 4 s).
 - Parked: `gh pr list --limit 200` silently truncates repos with more open PRs; raise the cap and warn.
+
+### Close (2026-11-24)
+- FB-4 closed at `fixed` without a separate re-verify, by the user's choice. No report published to tstack ("no need to report").
+- User reaction: "let close this slice".

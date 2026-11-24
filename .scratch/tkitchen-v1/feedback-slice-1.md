@@ -55,5 +55,4 @@ Report: [Slice 1 verification](verification-slice-1.md) · Plan: [PRD](PRD.md) (
 - Must not break: lock-chain probe `ticket-chain.mjs` (all `acquired`), serve-and-lock journey 9/9, `npm run verify`.
 - Status: fixed
 - Fix: `src/infrastructure/lock-file.ts` `acquire` makes the sweep best-effort (`.catch(() => undefined)`). Proof before exit 1 and after exit 0; ticket-chain `acquired, acquired`; journey `20261124-sweep-serve-lock` 9/9; `npm run verify` exit 0 (115 tests, sim 21, 200 seeds, 0 violations). Logs: `.verification-evidence/indicate-v1/lock-sweep/`.
-- Verified:
-
+- Verified: not re-verified; the user closed the slice on 2026-11-24 with FB-4 at fixed (its proof test fails before and passes after the fix).
