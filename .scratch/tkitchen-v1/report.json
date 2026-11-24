@@ -1,0 +1,31 @@
+{
+  "summary": "tkitchen v1 (git first) planned through pick-flow -> draft-plan -> verify-plan -> grill -> to-prd -> to-issues. A resident Node 22.19+ process per machine (started at sign-in) runs a Round per configured repo every 15 min: ls-remote + gh PR list, automatic base detection (config override -> open PR target -> creation reflog -> reflog tip -> needs_base/ambiguous), a Base moved Trigger when a base with children moves, and a branch_state table that `tkitchen notices` reads. Export `tkitchen.export/1` for aiNho. DDD layers, DST as the main test layer, and tstack's oxlint rules (snapshot bfa26c76) copied from tstack. 10 issues: 9 AFK, 1 HITL; issue 01 is the walking skeleton.",
+  "recommendations": [
+    "Start the implementation session with: pick-flow: implement .scratch/tkitchen-v1/issues/",
+    "Build in blocker order: 01 -> 02, 03 -> 04 -> 05 -> 06; 03 -> 07 -> 08; 03 -> 09; 10 (HITL) last on both machines",
+    "Review the four refinements made while writing the PRD (coverage-ledger.md, F-PRD-1..4): round_status table, watched-set descendant exception, fork PRs ignored, no separate formal-verification issue",
+    "Update aiNho .scratch/live-memory/contract.md: live events are decided (the kitchen), as plan.md notes"
+  ],
+  "evidenceRefs": [
+    { "path": ".scratch/tkitchen-v1/PRD.md" },
+    { "path": ".scratch/tkitchen-v1/quick-plan.md" },
+    { "path": ".scratch/tkitchen-v1/verification.md" },
+    { "path": ".scratch/tkitchen-v1/ledger.md" },
+    { "path": ".scratch/tkitchen-v1/grounding.md" },
+    { "path": ".scratch/tkitchen-v1/coverage-ledger.md" },
+    { "path": "CONTEXT.md" }
+  ],
+  "issues": [
+    { "id": "01", "path": ".scratch/tkitchen-v1/issues/01-walking-skeleton-round-and-notices.md", "title": "Walking skeleton: round and notices with config bases", "dependsOn": [] },
+    { "id": "02", "path": ".scratch/tkitchen-v1/issues/02-quality-gate-lint-and-structure.md", "title": "Quality gate: tstack oxlint rules, no-comments, structure checker, npm run verify", "dependsOn": ["01"] },
+    { "id": "03", "path": ".scratch/tkitchen-v1/issues/03-dst-harness-and-ground-truth-oracle.md", "title": "DST harness, SimRemote, ground-truth oracle, git contract suite", "dependsOn": ["01"] },
+    { "id": "04", "path": ".scratch/tkitchen-v1/issues/04-automatic-base-from-reflog-and-needs-base.md", "title": "Automatic base from reflog; needs_base, ambiguous, notices --history", "dependsOn": ["03"] },
+    { "id": "05", "path": ".scratch/tkitchen-v1/issues/05-github-pr-targets-via-gh.md", "title": "GitHub PR targets via gh, every Round; gh failure makes the Round incomplete", "dependsOn": ["04"] },
+    { "id": "06", "path": ".scratch/tkitchen-v1/issues/06-round-fault-tolerance-under-dst.md", "title": "Round fault tolerance under DST: git timeouts, fetch failure, force-push repeats, progress", "dependsOn": ["05"] },
+    { "id": "07", "path": ".scratch/tkitchen-v1/issues/07-serve-loop-and-single-instance-lock.md", "title": "tkitchen serve loop and single-instance lock, crash/restart in DST", "dependsOn": ["03"] },
+    { "id": "08", "path": ".scratch/tkitchen-v1/issues/08-sign-in-launch-task.md", "title": "Sign-in launch task (install/uninstall scripts, README)", "dependsOn": ["07"] },
+    { "id": "09", "path": ".scratch/tkitchen-v1/issues/09-export-for-ainho.md", "title": "tkitchen export (tkitchen.export/1) with exactly-once oracle", "dependsOn": ["03"] },
+    { "id": "10", "path": ".scratch/tkitchen-v1/issues/10-hitl-smoke-on-both-machines.md", "title": "HITL smoke on home and work laptop", "dependsOn": ["05", "06", "07", "08", "09"] }
+  ],
+  "implementationAuthorized": false
+}

@@ -1,0 +1,50 @@
+{
+  "commit": "77252202917945757d0b8d5bece3647c69d61c27",
+  "results": [
+    {
+      "depthRequested": 5,
+      "ticketsWritten": 5,
+      "fabricateError": null,
+      "deepestComponentChars": 96,
+      "first": {
+        "pid": 28788,
+        "type": "result",
+        "result": "acquired"
+      },
+      "lockAfterFirst": "{\"pid\":28788,\"startedAt\":\"2026-11-24T09:42:28.329Z\"}",
+      "second": null,
+      "filesLeftCount": 1,
+      "filesLeft": [
+        "kitchen.lock"
+      ]
+    },
+    {
+      "depthRequested": 30,
+      "ticketsWritten": 18,
+      "fabricateError": "ENOENT",
+      "deepestComponentChars": 268,
+      "first": {
+        "pid": 102816,
+        "type": "result",
+        "result": "threw",
+        "code": "ENOENT",
+        "message": "ENOENT: no such file or directory, open 'C:\\Users\\Admin\\AppData\\Local\\Temp\\qa07r4-chain-uYuLGx\\kitchen.lock.takeover.recover-6816.recover-6816.recover-6816.recover-6816.recover-6816.recover-6816.recov"
+      },
+      "lockAfterFirst": "{\"pid\":6816,\"startedAt\":\"2026-11-24T09:42:28.450Z\"}",
+      "second": {
+        "pid": 55872,
+        "type": "result",
+        "result": "threw",
+        "code": "ENOENT",
+        "message": "ENOENT: no such file or directory, open 'C:\\Users\\Admin\\AppData\\Local\\Temp\\qa07r4-chain-uYuLGx\\kitchen.lock.takeover.recover-6816.recover-6816.recover-6816.recover-6816.recover-6816.recover-6816.recov"
+      },
+      "filesLeftCount": 20,
+      "filesLeft": [
+        "kitchen.lock",
+        "kitchen.lock.takeover",
+        "kitchen.lock.takeover.recover-6816",
+        "kitchen.lock.takeover.recover-6816.recover-6816"
+      ]
+    }
+  ]
+}

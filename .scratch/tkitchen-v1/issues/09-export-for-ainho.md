@@ -1,6 +1,6 @@
 ---
 repo: F:/MyWork/tkitchen
-status: ready-for-agent
+status: closed
 type: AFK
 covers: [US-005, DEC-010, RB-009, DEC-012 (export oracle)]
 ---
