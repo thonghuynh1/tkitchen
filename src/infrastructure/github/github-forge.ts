@@ -1,20 +1,46 @@
-import { execFile } from "node:child_process";
+import { exec, execFile, spawn } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 import { PortError } from "../../application/ports.ts";
 import type { Forge, PullRequest, RepoConfig } from "../../application/ports.ts";
 
 export interface GhRunResult { stdout: string; stderr: string; code: number; }
 export type GhRunner = (args: string[], cwd: string) => Promise<GhRunResult>;
 
-const TIMEOUT_MS = 20000;
+export const GH_TIMEOUT_MS = 20000;
+export interface GhRunnerOptions { timeoutMs?: number; }
+const SHELL_SAFE_ARG = /^[\w.,=-]+$/;
 const GH_ARGS = ["pr", "list", "--state", "open", "--json", "number,headRefName,baseRefName,url,author,isCrossRepository", "--limit", "200"];
 
-export const defaultGhRunner: GhRunner = (args, cwd) => new Promise((resolve, reject) => {
-  execFile("gh", args, { cwd, env: { ...process.env, GH_PROMPT_DISABLED: "1" }, timeout: TIMEOUT_MS, shell: process.platform === "win32" }, (err, stdout, stderr) => {
-    if (err !== null && typeof err === "object" && "killed" in err && err.killed === true) { reject(new PortError("timeout", "gh pr list timed out after 20s")); return; }
-    const code = err === null ? 0 : (typeof err === "object" && "code" in err && typeof err.code === "number" ? err.code : 1);
-    resolve({ stdout: stdout.toString(), stderr: stderr.toString(), code });
+type GhDone = (err: Error | null, stdout: string, stderr: string) => void;
+
+function startGh(args: string[], cwd: string, done: GhDone): ChildProcess {
+  const env = { ...process.env, GH_PROMPT_DISABLED: "1" };
+  if (process.platform !== "win32") return execFile("gh", args, { cwd, env }, done);
+  return exec(["gh", ...args].join(" "), { cwd, env, windowsHide: true }, done);
+}
+
+function killTree(child: ChildProcess): void {
+  if (child.pid === undefined) return;
+  if (process.platform !== "win32") { child.kill("SIGKILL"); return; }
+  spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], { stdio: "ignore", windowsHide: true }).on("error", () => undefined);
+}
+
+export function createGhRunner(options: GhRunnerOptions = {}): GhRunner {
+  const timeoutMs = options.timeoutMs ?? GH_TIMEOUT_MS;
+  return (args, cwd) => new Promise((resolve, reject) => {
+    if (!args.every((arg) => SHELL_SAFE_ARG.test(arg))) { reject(new PortError("failed", "gh argument is not shell-safe")); return; }
+    let timedOut = false;
+    const child = startGh(args, cwd, (err, stdout, stderr) => {
+      clearTimeout(timer);
+      if (timedOut) { reject(new PortError("timeout", "gh pr list timed out after " + timeoutMs + "ms")); return; }
+      const code = err === null ? 0 : ("code" in err && typeof err.code === "number" ? err.code : 1);
+      resolve({ stdout, stderr, code });
+    });
+    const timer = setTimeout(() => { timedOut = true; killTree(child); }, timeoutMs);
   });
-});
+}
+
+export const defaultGhRunner: GhRunner = createGhRunner();
 
 function isRecord(v: unknown): v is Record<string, unknown> { return typeof v === "object" && v !== null && !Array.isArray(v); }
 

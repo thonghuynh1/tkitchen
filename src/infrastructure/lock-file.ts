@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { link, mkdir, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { link, mkdir, readdir, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 import type { Lock } from "../application/ports.ts";
 import { kitchenHome } from "./env.ts";
 
@@ -32,13 +32,7 @@ function parsePid(raw: string): number | null {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
-async function readPidAt(path: string): Promise<number | null> {
-  let raw: string;
-  try {
-    raw = await readFile(path, "utf8");
-  } catch {
-    return null;
-  }
+function pidFromJson(raw: string): number | null {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -48,30 +42,28 @@ async function readPidAt(path: string): Promise<number | null> {
   if (!isRecord(parsed)) return null;
   const pid = parsed["pid"];
   return typeof pid === "number" && Number.isInteger(pid) && pid > 0 ? pid : null;
+}
+
+function ticketPid(raw: string): number | null {
+  return parsePid(raw) ?? pidFromJson(raw);
+}
+
+async function readRaw(path: string): Promise<string | null> {
+  try {
+    return await readFile(path, "utf8");
+  } catch {
+    return null;
+  }
+}
+
+async function readPidAt(path: string): Promise<number | null> {
+  const raw = await readRaw(path);
+  return raw === null ? null : pidFromJson(raw);
 }
 
 async function readTicketPidAt(path: string): Promise<number | null> {
-  let raw: string;
-  try {
-    raw = await readFile(path, "utf8");
-  } catch {
-    return null;
-  }
-  const plain = parsePid(raw);
-  if (plain !== null) return plain;
-  return readPidFromRaw(raw);
-}
-
-async function readPidFromRaw(raw: string): Promise<number | null> {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-  if (!isRecord(parsed)) return null;
-  const pid = parsed["pid"];
-  return typeof pid === "number" && Number.isInteger(pid) && pid > 0 ? pid : null;
+  const raw = await readRaw(path);
+  return raw === null ? null : ticketPid(raw);
 }
 
 async function discardAny(path: string): Promise<void> {
@@ -120,23 +112,14 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => { setTimeout(resolve, ms); });
 }
 
-interface LockIdentity {
+interface FileSnapshot {
   pid: number | null;
   key: string;
 }
 
-interface TicketSnapshot {
-  pid: number | null;
-  key: string;
-}
-
-async function readIdentityAt(path: string): Promise<LockIdentity | null> {
-  let raw: string;
-  try {
-    raw = await readFile(path, "utf8");
-  } catch {
-    return null;
-  }
+async function readSnapshotAt(path: string, decodePid: (raw: string) => number | null): Promise<FileSnapshot | null> {
+  const raw = await readRaw(path);
+  if (raw === null) return null;
   let info;
   try {
     info = await stat(path);
@@ -145,29 +128,23 @@ async function readIdentityAt(path: string): Promise<LockIdentity | null> {
   }
   const digest = createHash("sha256").update(raw).digest("hex").slice(0, DIGEST_HEX_LENGTH);
   const key = [info.ino, info.mtimeMs, info.size, digest].join("-");
-  return { pid: await readPidFromRaw(raw), key };
-}
-
-async function readTicketSnapshotAt(path: string): Promise<TicketSnapshot | null> {
-  let raw: string;
-  try {
-    raw = await readFile(path, "utf8");
-  } catch {
-    return null;
-  }
-  let info;
-  try {
-    info = await stat(path);
-  } catch {
-    return null;
-  }
-  const digest = createHash("sha256").update(raw).digest("hex").slice(0, DIGEST_HEX_LENGTH);
-  const key = [info.ino, info.mtimeMs, info.size, digest].join("-");
-  const plain = parsePid(raw);
-  return { pid: plain !== null ? plain : await readPidFromRaw(raw), key };
+  return { pid: decodePid(raw), key };
 }
 
 type TakeoverResult = "acquired" | "held" | "retry";
+
+function recoveryName(path: string, owner: string): string {
+  return createHash("sha256").update(basename(path) + "\0" + owner).digest("hex").slice(0, DIGEST_HEX_LENGTH);
+}
+
+async function listNames(dir: string): Promise<string[]> {
+  try {
+    return await readdir(dir);
+  } catch (e) {
+    if (errorCode(e) === "ENOENT") return [];
+    throw e;
+  }
+}
 
 export class FileLock implements Lock {
   readonly path: string;
@@ -205,11 +182,11 @@ export class FileLock implements Lock {
     return this.publish(this.path, content, this.publishPath);
   }
   private async clearDeadTicket(path: string): Promise<void> {
-    const judged = await readTicketSnapshotAt(path);
+    const judged = await readSnapshotAt(path, ticketPid);
     if (judged === null) return;
     if (judged.pid !== null && pidIsAlive(judged.pid)) return;
     if (judged.pid === null && await isFresh(path)) return;
-    const recoveryPath = path + ".recover-" + (judged.pid === null ? "invalid-" + judged.key : String(judged.pid));
+    const recoveryPath = this.path + ".recover-" + recoveryName(path, judged.pid === null ? "invalid-" + judged.key : String(judged.pid));
     const recoveryPublishPath = recoveryPath + ".publish-" + this.pid;
     if (!await this.publish(recoveryPath, String(this.pid), recoveryPublishPath)) {
       const recoveryPid = await readTicketPidAt(recoveryPath);
@@ -219,36 +196,48 @@ export class FileLock implements Lock {
       return;
     }
     try {
-      const now = await readTicketSnapshotAt(path);
+      const now = await readSnapshotAt(path, ticketPid);
       if (now === null || now.key !== judged.key) return;
       await discardAny(path);
     } finally {
       await discardAt(recoveryPath);
     }
   }
-  private async takeOverStale(judged: LockIdentity): Promise<TakeoverResult> {
+  private async takeOverStale(judged: FileSnapshot): Promise<TakeoverResult> {
     const content = JSON.stringify({ pid: this.pid, key: judged.key });
     if (!await this.publish(this.takeoverPath, content, this.takeoverPublishPath)) {
       await this.clearDeadTicket(this.takeoverPath);
       return "retry";
     }
     try {
-      const now = await readIdentityAt(this.path);
+      const now = await readSnapshotAt(this.path, pidFromJson);
       if (now !== null && now.key !== judged.key) {
         return now.pid !== null && pidIsAlive(now.pid) ? "held" : "retry";
       }
       if (now !== null) await discardAt(this.path);
       if (await this.tryCreate()) return "acquired";
-      const holder = await readIdentityAt(this.path);
+      const holder = await readSnapshotAt(this.path, pidFromJson);
       return holder !== null && holder.pid !== null && pidIsAlive(holder.pid) ? "held" : "retry";
     } finally {
       if (await readTicketPidAt(this.takeoverPath) === this.pid) await discardAt(this.takeoverPath);
     }
   }
+  private async clearDeadRecoveryTickets(): Promise<void> {
+    const prefixes = [basename(this.path) + ".recover-", basename(this.takeoverPath) + ".recover-"];
+    const dir = dirname(this.path);
+    for (const name of await listNames(dir)) {
+      if (prefixes.some((prefix) => name.startsWith(prefix))) await this.clearDeadTicket(join(dir, name));
+    }
+  }
   async acquire(): Promise<"acquired" | "held"> {
+    const result = await this.acquireOnce();
+    if (result === "acquired") await this.clearDeadRecoveryTickets().catch(() => undefined);
+    return result;
+  }
+  private async acquireOnce(): Promise<"acquired" | "held"> {
     for (let attempt = 0; attempt < MAX_ACQUIRE_ATTEMPTS; attempt++) {
       if (await this.tryCreate()) return "acquired";
-      const holder = await readIdentityAt(this.path);
+      const holder = await readSnapshotAt(this.path, pidFromJson);
       if (holder !== null && holder.pid !== null && pidIsAlive(holder.pid)) return "held";
       if (holder !== null && holder.pid === null && await isFresh(this.path)) return "held";
       if (holder === null) continue;

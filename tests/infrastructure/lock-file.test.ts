@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { existsSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fork, spawn } from "node:child_process";
@@ -119,6 +119,27 @@ describe("FileLock", () => {
     const longAgo = new Date(Date.now() - 60000);
     utimesSync(takeoverPath, longAgo, longAgo);
     expect(await lock.acquire()).toBe("acquired");
+    await lock.release();
+  });
+
+  it("acquires through any depth of dead recovery tickets and keeps live ones", async () => {
+    const home = makeHome();
+    const lock = new FileLock(home);
+    const dead = await deadPid();
+    writeFileSync(lock.path, JSON.stringify({ pid: dead, startedAt: new Date().toISOString() }));
+    let ticket = join(home, "kitchen.lock.takeover");
+    writeFileSync(ticket, JSON.stringify({ pid: dead, key: "planted" }));
+    let written = 0;
+    for (let i = 0; i < 40; i++) {
+      ticket = ticket + ".recover-" + dead;
+      try { writeFileSync(ticket, String(dead)); written++; } catch { break; }
+    }
+    expect(written).toBeGreaterThan(10);
+    writeFileSync(join(home, "kitchen.lock.recover-0123456789abcdef"), String(dead));
+    const live = join(home, "kitchen.lock.recover-fedcba9876543210");
+    writeFileSync(live, String(process.pid));
+    expect(await lock.acquire()).toBe("acquired");
+    expect(readdirSync(home).sort()).toEqual(["kitchen.lock", "kitchen.lock.recover-fedcba9876543210"]);
     await lock.release();
   });
 
