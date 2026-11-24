@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawn } from "node:child_process";
+import { fork, spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import { dirname, join as pathJoin } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -35,6 +35,26 @@ function startContender(home: string): Contender {
   });
   const exited = new Promise<void>((resolve) => { child.on("exit", () => { resolve(); }); });
   return { child, result, exited };
+}
+
+interface ScheduleWorker { child: ChildProcess; next: () => Promise<{ type: string; tag?: string; pid: number; result?: string }>; exited: Promise<void>; }
+
+function startScheduleWorker(home: string, mode: string): ScheduleWorker {
+  const script = pathJoin(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "lock-schedule-worker.mjs");
+  const child = fork(script, [home, mode], { execArgv: [], stdio: ["ignore", "ignore", "pipe", "ipc"] });
+  const queue: { type: string; tag?: string; pid: number; result?: string }[] = [];
+  const waiters: ((m: { type: string; tag?: string; pid: number; result?: string }) => void)[] = [];
+  child.on("message", (m: { type: string; tag?: string; pid: number; result?: string }) => {
+    const waiter = waiters.shift();
+    if (waiter !== undefined) waiter(m);
+    else queue.push(m);
+  });
+  const exited = new Promise<void>((resolve) => { child.on("exit", () => { resolve(); }); });
+  return { child, exited, next: () => {
+    const queued = queue.shift();
+    if (queued !== undefined) return Promise.resolve(queued);
+    return new Promise((resolve) => { waiters.push(resolve); });
+  } };
 }
 
 describe("FileLock", () => {
@@ -80,36 +100,34 @@ describe("FileLock", () => {
     await lock.release();
   });
 
-  it("recovers a guard whose owner pid is dead", async () => {
+  it("recovers a takeover claim whose owner pid is dead", async () => {
     const home = makeHome();
     const lock = new FileLock(home);
     writeFileSync(lock.path, JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
-    writeFileSync(join(home, "kitchen.lock.guard"), String(await deadPid()));
+    writeFileSync(join(home, "kitchen.lock.takeover"), JSON.stringify({ pid: await deadPid(), key: "stale" }));
     expect(await lock.acquire()).toBe("acquired");
     await lock.release();
-    expect(existsSync(join(home, "kitchen.lock.guard"))).toBe(false);
+    expect(existsSync(join(home, "kitchen.lock.takeover"))).toBe(false);
   });
 
-  it("recovers an ownerless guard directory left by a crashed takeover", async () => {
+  it("recovers an ownerless takeover claim left by a crashed takeover", async () => {
     const home = makeHome();
     const lock = new FileLock(home);
     writeFileSync(lock.path, JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
-    const guardPath = join(home, "kitchen.lock.guard");
-    mkdirSync(guardPath);
+    const takeoverPath = join(home, "kitchen.lock.takeover");
+    writeFileSync(takeoverPath, "");
     const longAgo = new Date(Date.now() - 60000);
-    utimesSync(guardPath, longAgo, longAgo);
+    utimesSync(takeoverPath, longAgo, longAgo);
     expect(await lock.acquire()).toBe("acquired");
     await lock.release();
   });
 
-  it("a successor process acquires after the guard owner is killed with no pid published", async () => {
+  it("a successor process acquires when a takeover claim owner died", async () => {
     const home = makeHome();
     const stalePath = join(home, "kitchen.lock");
     writeFileSync(stalePath, JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
-    const guardPath = join(home, "kitchen.lock.guard");
-    writeFileSync(guardPath, "");
-    const longAgo = new Date(Date.now() - 60000);
-    utimesSync(guardPath, longAgo, longAgo);
+    const takeoverPath = join(home, "kitchen.lock.takeover");
+    writeFileSync(takeoverPath, JSON.stringify({ pid: await deadPid(), key: "stale" }));
     const contender = startContender(home);
     try {
       contender.child.stdin?.write("go\n");
@@ -123,15 +141,65 @@ describe("FileLock", () => {
     }
   }, 60000);
 
-  it("does not steal a guard held by a live pid", async () => {
+  it("does not steal a takeover claim held by a live pid", async () => {
     const home = makeHome();
     const lock = new FileLock(home);
     writeFileSync(lock.path, JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
-    const guardPath = join(home, "kitchen.lock.guard");
-    writeFileSync(guardPath, String(process.pid));
+    const takeoverPath = join(home, "kitchen.lock.takeover");
+    const claim = JSON.stringify({ pid: process.pid, key: "stale" });
+    writeFileSync(takeoverPath, claim);
     expect(await lock.acquire()).toBe("held");
-    expect(readFileSync(guardPath, "utf8")).toBe(String(process.pid));
-    rmSync(guardPath, { force: true });
+    expect(readFileSync(takeoverPath, "utf8")).toBe(claim);
+    rmSync(takeoverPath, { force: true });
+  }, 60000);
+
+  it("forced delayed stale-read schedule has exactly one winner", async () => {
+    const home = makeHome();
+    writeFileSync(join(home, "kitchen.lock"), JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
+    const delayed = startScheduleWorker(home, "delayed-stale-read");
+    const normal = startScheduleWorker(home, "normal");
+    try {
+      const checkpoint = await delayed.next();
+      expect(checkpoint.tag).toBe("delayed-stale-read");
+      const normalResult = await normal.next();
+      expect(normalResult.result).toBe("acquired");
+      delayed.child.send("resume");
+      const delayedResult = await delayed.next();
+      expect(delayedResult.result).toBe("held");
+      const content = JSON.parse(readFileSync(join(home, "kitchen.lock"), "utf8")) as { pid: number };
+      expect(content.pid).toBe(normal.child.pid);
+      normal.child.send("stop");
+      delayed.child.send("stop");
+      await Promise.all([delayed.exited, normal.exited]);
+    } finally {
+      delayed.child.kill();
+      normal.child.kill();
+    }
+  }, 60000);
+
+  it("forced delayed takeover-recovery schedule has exactly one winner", async () => {
+    const home = makeHome();
+    writeFileSync(join(home, "kitchen.lock"), JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
+    writeFileSync(join(home, "kitchen.lock.takeover"), JSON.stringify({ pid: await deadPid(), key: "stale" }));
+    const delayed = startScheduleWorker(home, "delayed-takeover-read");
+    const normal = startScheduleWorker(home, "normal");
+    try {
+      const checkpoint = await delayed.next();
+      expect(checkpoint.tag).toBe("delayed-takeover-read");
+      const normalResult = await normal.next();
+      expect(normalResult.result).toBe("acquired");
+      delayed.child.send("resume");
+      const delayedResult = await delayed.next();
+      expect(delayedResult.result).toBe("held");
+      const content = JSON.parse(readFileSync(join(home, "kitchen.lock"), "utf8")) as { pid: number };
+      expect(content.pid).toBe(normal.child.pid);
+      normal.child.send("stop");
+      delayed.child.send("stop");
+      await Promise.all([delayed.exited, normal.exited]);
+    } finally {
+      delayed.child.kill();
+      normal.child.kill();
+    }
   }, 60000);
 
   it("concurrent stale takeover has exactly one winner across processes", async () => {

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { link, mkdir, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Lock } from "../application/ports.ts";
@@ -6,6 +7,7 @@ import { kitchenHome } from "./env.ts";
 const MAX_ACQUIRE_ATTEMPTS = 100;
 const LOCK_WRITE_GRACE_MS = 1000;
 const GUARD_RETRY_MS = 10;
+const DIGEST_HEX_LENGTH = 16;
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -48,12 +50,28 @@ async function readPidAt(path: string): Promise<number | null> {
   return typeof pid === "number" && Number.isInteger(pid) && pid > 0 ? pid : null;
 }
 
-async function readGuardPidAt(path: string): Promise<number | null> {
+async function readTicketPidAt(path: string): Promise<number | null> {
+  let raw: string;
   try {
-    return parsePid(await readFile(path, "utf8"));
+    raw = await readFile(path, "utf8");
   } catch {
     return null;
   }
+  const plain = parsePid(raw);
+  if (plain !== null) return plain;
+  return readPidFromRaw(raw);
+}
+
+async function readPidFromRaw(raw: string): Promise<number | null> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!isRecord(parsed)) return null;
+  const pid = parsed["pid"];
+  return typeof pid === "number" && Number.isInteger(pid) && pid > 0 ? pid : null;
 }
 
 async function discardAny(path: string): Promise<void> {
@@ -102,24 +120,45 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => { setTimeout(resolve, ms); });
 }
 
+interface LockIdentity {
+  pid: number | null;
+  key: string;
+}
+
+async function readIdentityAt(path: string): Promise<LockIdentity | null> {
+  let raw: string;
+  try {
+    raw = await readFile(path, "utf8");
+  } catch {
+    return null;
+  }
+  let info;
+  try {
+    info = await stat(path);
+  } catch {
+    return null;
+  }
+  const digest = createHash("sha256").update(raw).digest("hex").slice(0, DIGEST_HEX_LENGTH);
+  const key = [info.ino, info.mtimeMs, info.size, digest].join("-");
+  return { pid: await readPidFromRaw(raw), key };
+}
+
 type TakeoverResult = "acquired" | "held" | "retry";
 
 export class FileLock implements Lock {
   readonly path: string;
   private readonly claimPath: string;
   private readonly publishPath: string;
-  private readonly guardPath: string;
-  private readonly guardClaimPath: string;
-  private readonly guardPublishPath: string;
+  private readonly takeoverPath: string;
+  private readonly takeoverPublishPath: string;
   private readonly pid: number;
   constructor(home?: string) {
     this.path = join(home ?? kitchenHome(), "kitchen.lock");
     this.pid = process.pid;
     this.claimPath = this.path + ".claim-" + this.pid;
     this.publishPath = this.path + ".publish-" + this.pid;
-    this.guardPath = this.path + ".guard";
-    this.guardClaimPath = this.path + ".guard-claim-" + this.pid;
-    this.guardPublishPath = this.path + ".guard-publish-" + this.pid;
+    this.takeoverPath = this.path + ".takeover";
+    this.takeoverPublishPath = this.path + ".takeover-publish-" + this.pid;
   }
   holderPid(): Promise<number | null> {
     return readPidAt(this.path);
@@ -141,59 +180,55 @@ export class FileLock implements Lock {
     const content = JSON.stringify({ pid: this.pid, startedAt: new Date().toISOString() });
     return this.publish(this.path, content, this.publishPath);
   }
-  private async enterGuard(): Promise<boolean> {
-    let published = false;
-    try {
-      published = await this.publish(this.guardPath, String(this.pid), this.guardPublishPath);
-    } catch (e) {
-      if (errorCode(e) !== "EPERM" && errorCode(e) !== "EEXIST") throw e;
-    }
-    if (published) return true;
-    await this.recoverGuard();
-    return false;
-  }
-  private async recoverGuard(): Promise<void> {
-    const guardPid = await readGuardPidAt(this.guardPath);
-    if (guardPid !== null && pidIsAlive(guardPid)) return;
-    if (guardPid === null && await isFresh(this.guardPath)) return;
-    if (!await claimTo(this.guardPath, this.guardClaimPath)) return;
-    const claimed = await readGuardPidAt(this.guardClaimPath);
-    if (claimed !== null && pidIsAlive(claimed)) {
-      await restoreClaim(this.guardClaimPath, this.guardPath);
+  private async clearDeadTicket(path: string): Promise<void> {
+    const judged = await readTicketPidAt(path);
+    if (judged !== null && pidIsAlive(judged)) return;
+    if (judged === null && await isFresh(path)) return;
+    const recoveryPath = path + ".recover-" + (judged === null ? "invalid" : String(judged));
+    const recoveryPublishPath = recoveryPath + ".publish-" + this.pid;
+    if (!await this.publish(recoveryPath, String(this.pid), recoveryPublishPath)) {
+      const recoveryPid = await readTicketPidAt(recoveryPath);
+      if (recoveryPid !== null && pidIsAlive(recoveryPid)) return;
+      if (recoveryPid === null && await isFresh(recoveryPath)) return;
+      await this.clearDeadTicket(recoveryPath);
       return;
     }
-    await discardAny(this.guardClaimPath);
-  }
-  private async exitGuard(): Promise<void> {
-    if (!await claimTo(this.guardPath, this.guardClaimPath)) return;
-    const claimed = await readGuardPidAt(this.guardClaimPath);
-    if (claimed === this.pid) {
-      await discardAny(this.guardClaimPath);
-      return;
-    }
-    await restoreClaim(this.guardClaimPath, this.guardPath);
-  }
-  private async takeOverStale(): Promise<TakeoverResult> {
-    if (!await this.enterGuard()) return "retry";
     try {
-      const holder = await readPidAt(this.path);
-      if (holder !== null && pidIsAlive(holder)) return "held";
-      if (holder === null && await isFresh(this.path)) return "held";
-      await discardAt(this.path);
-      if (await this.tryCreate()) return "acquired";
-      const now = await readPidAt(this.path);
-      return now !== null && pidIsAlive(now) ? "held" : "retry";
+      const now = await readTicketPidAt(path);
+      if (now !== judged) return;
+      if (now === null && await isFresh(path)) return;
+      await discardAny(path);
     } finally {
-      await this.exitGuard();
+      await discardAt(recoveryPath);
+    }
+  }
+  private async takeOverStale(judged: LockIdentity): Promise<TakeoverResult> {
+    const content = JSON.stringify({ pid: this.pid, key: judged.key });
+    if (!await this.publish(this.takeoverPath, content, this.takeoverPublishPath)) {
+      await this.clearDeadTicket(this.takeoverPath);
+      return "retry";
+    }
+    try {
+      const now = await readIdentityAt(this.path);
+      if (now !== null && now.key !== judged.key) {
+        return now.pid !== null && pidIsAlive(now.pid) ? "held" : "retry";
+      }
+      if (now !== null) await discardAt(this.path);
+      if (await this.tryCreate()) return "acquired";
+      const holder = await readIdentityAt(this.path);
+      return holder !== null && holder.pid !== null && pidIsAlive(holder.pid) ? "held" : "retry";
+    } finally {
+      await discardAt(this.takeoverPath);
     }
   }
   async acquire(): Promise<"acquired" | "held"> {
     for (let attempt = 0; attempt < MAX_ACQUIRE_ATTEMPTS; attempt++) {
       if (await this.tryCreate()) return "acquired";
-      const holder = await readPidAt(this.path);
-      if (holder !== null && pidIsAlive(holder)) return "held";
-      if (holder === null && await isFresh(this.path)) return "held";
-      const result = await this.takeOverStale();
+      const holder = await readIdentityAt(this.path);
+      if (holder !== null && holder.pid !== null && pidIsAlive(holder.pid)) return "held";
+      if (holder !== null && holder.pid === null && await isFresh(this.path)) return "held";
+      if (holder === null) continue;
+      const result = await this.takeOverStale(holder);
       if (result !== "retry") return result;
       await delay(GUARD_RETRY_MS);
     }
