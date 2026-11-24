@@ -82,10 +82,18 @@ export class GitRepoImpl implements GitRepo {
     if (Number.isNaN(n)) throw new PortError("failed", "git rev-list returned non-numeric count");
     return n;
   }
+  private reflogStdout(r: GitRunResult): string | null {
+    if (r.code === 0) return r.stdout;
+    const stderr = r.stderr.trim();
+    const absent = /unknown revision or path not in the working tree|ambiguous argument|no reflog for|does not exist/.test(stderr);
+    if (absent) return null;
+    throw new PortError("failed", "git reflog failed: " + (stderr === "" ? "exit " + r.code : stderr));
+  }
   async creationReflog(branch: string): Promise<{ oid: string; createdFrom: string; unixSeconds: number } | null> {
     const r = await this.run(["reflog", "show", "--date=unix", "--format=%H%x09%gd%x09%gs", "refs/heads/" + branch]);
-    if (r.code !== 0) return null;
-    const lines = r.stdout.split("\n").filter((l) => l !== "");
+    const stdout = this.reflogStdout(r);
+    if (stdout === null) return null;
+    const lines = stdout.split("\n").filter((l) => l !== "");
     const creations: { oid: string; createdFrom: string; unixSeconds: number; index: number }[] = [];
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i] ?? "";
@@ -106,8 +114,9 @@ export class GitRepoImpl implements GitRepo {
   }
   async tipAt(ref: string, unixSeconds: number): Promise<string | null> {
     const r = await this.run(["reflog", "show", "--date=unix", "--format=%H%x09%gd", ref]);
-    if (r.code !== 0) return null;
-    for (const line of r.stdout.split("\n")) {
+    const stdout = this.reflogStdout(r);
+    if (stdout === null) return null;
+    for (const line of stdout.split("\n")) {
       if (line === "") continue;
       const tab = line.indexOf("\t");
       if (tab < 0) continue;
