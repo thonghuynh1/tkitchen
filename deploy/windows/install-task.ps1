@@ -4,6 +4,8 @@ param(
     [Parameter(Mandatory = $false)][string]$TaskName = "tkitchen"
 )
 
+$ErrorActionPreference = 'Stop'
+
 $repo = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $user = "$env:USERDOMAIN\$env:USERNAME"
 $node = (Get-Command node).Source
@@ -78,5 +80,5 @@ if ($Export) {
     exit 0
 }
 
-Register-ScheduledTask -TaskName $TaskName -Xml ($xml.Trim() + "`n") -Force | Out-Null
+Register-ScheduledTask -TaskName $TaskName -Xml ($xml.Trim() + "`n") -Force -ErrorAction Stop | Out-Null
 Write-Host "Registered task $TaskName"
