@@ -75,6 +75,12 @@ export class GitRepoImpl implements GitRepo {
     if (r.code === 1) return false;
     throw new PortError("failed", "git merge-base failed: " + r.stderr.trim());
   }
+  async containingBranches(remote: string, branch: string): Promise<string[]> {
+    const prefix = "refs/remotes/" + remote + "/";
+    const r = await this.run(["for-each-ref", "--format=%(refname)", "--contains", this.ref(branch, remote), prefix]);
+    if (r.code !== 0) throw new PortError("failed", "git for-each-ref failed: " + r.stderr.trim());
+    return r.stdout.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.startsWith(prefix)).map((l) => l.slice(prefix.length)).filter((b) => b !== "HEAD");
+  }
   async countBehind(child: string, base: string): Promise<number> {
     const r = await this.run(["rev-list", "--count", child + ".." + base]);
     if (r.code !== 0) throw new PortError("failed", "git rev-list failed: " + r.stderr.trim());

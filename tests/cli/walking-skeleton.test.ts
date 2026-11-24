@@ -126,7 +126,7 @@ describe("walking skeleton", () => {
       return { stdout: "", stderr: "", code: 0 };
     };
     const repo = new GitRepoImpl(f.work, runner);
-    await repo.lsRemoteHeads("origin"); await repo.fetch("origin"); await repo.isAncestor("a", "b"); await repo.countBehind("a", "b");
-    expect(new Set(verbs)).toEqual(new Set(["ls-remote", "fetch", "merge-base", "rev-list"]));
+    await repo.lsRemoteHeads("origin"); await repo.fetch("origin"); await repo.isAncestor("a", "b"); await repo.containingBranches("origin", "a"); await repo.countBehind("a", "b");
+    expect(new Set(verbs)).toEqual(new Set(["ls-remote", "fetch", "merge-base", "for-each-ref", "rev-list"]));
   }, 60000);
 });

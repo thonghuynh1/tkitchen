@@ -52,6 +52,17 @@ export function gitRepoContract(name: string, make: () => Promise<ScriptedGitRep
       expect(await repo.isAncestor(MAIN_REF, MAIN_REF)).toBe(true);
     }, 60000);
 
+    it("containingBranches lists the branch and every branch containing it", async () => {
+      await repo.branchFrom("feature", "main");
+      await repo.branchFrom("root", "main");
+      await repo.advance("feature");
+      await repo.advance("main");
+      await repo.fetch("origin");
+      expect((await repo.containingBranches("origin", "root")).sort()).toEqual(["feature", "main", "root"]);
+      expect((await repo.containingBranches("origin", "main")).sort()).toEqual(["main"]);
+      expect((await repo.containingBranches("origin", "feature")).sort()).toEqual(["feature"]);
+    }, 60000);
+
     it("creationReflog named, commit, and none", async () => {
       await repo.branchLocalNamed("named", "main");
       const named = await repo.creationReflog("named");

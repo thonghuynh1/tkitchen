@@ -29,11 +29,11 @@ async function collectAncestorCache(git: GitRepo, remote: string, heads: Readonl
   const cache = new Map<string, boolean>();
   const branches = [...heads.keys()];
   for (const a of branches) {
+    const containing = new Set(await git.containingBranches(remote, a));
     for (const b of branches) {
       const ha = heads.get(a);
       const hb = heads.get(b);
-      if (a === b || (ha !== undefined && ha === hb)) cache.set(cacheKey(a, b), true);
-      else cache.set(cacheKey(a, b), await git.isAncestor(refFor(remote, a), refFor(remote, b)));
+      cache.set(cacheKey(a, b), a === b || (ha !== undefined && ha === hb) || containing.has(b));
     }
   }
   return (a: string, b: string): boolean => {

@@ -1,10 +1,10 @@
 import { PortError } from "../../../src/application/ports.ts";
 
 export type GitFaultKind = "timeout" | "failed";
-export type GitMethod = "lsRemoteHeads" | "fetch" | "isAncestor" | "countBehind" | "creationReflog" | "tipAt";
+export type GitMethod = "lsRemoteHeads" | "fetch" | "isAncestor" | "containingBranches" | "countBehind" | "creationReflog" | "tipAt";
 export interface GitFault { method: GitMethod | "*"; kind: GitFaultKind; }
 
-export const GIT_METHODS: GitMethod[] = ["lsRemoteHeads", "fetch", "isAncestor", "countBehind", "creationReflog", "tipAt"];
+export const GIT_METHODS: GitMethod[] = ["lsRemoteHeads", "fetch", "isAncestor", "containingBranches", "countBehind", "creationReflog", "tipAt"];
 
 export class GitFaultInjector {
   private pending: GitFault | null = null;

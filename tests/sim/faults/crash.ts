@@ -29,6 +29,7 @@ export class CrashInjector {
       lsRemoteHeads: async (remote: string) => { this.crossing("git.lsRemoteHeads"); return inner.lsRemoteHeads(remote); },
       fetch: async (remote: string) => { this.crossing("git.fetch"); return inner.fetch(remote); },
       isAncestor: async (ancestor: string, descendant: string) => { this.crossing("git.isAncestor"); return inner.isAncestor(ancestor, descendant); },
+      containingBranches: async (remote: string, branch: string) => { this.crossing("git.containingBranches"); return inner.containingBranches(remote, branch); },
       countBehind: async (child: string, base: string) => { this.crossing("git.countBehind"); return inner.countBehind(child, base); },
       creationReflog: async (branch: string) => { this.crossing("git.creationReflog"); return inner.creationReflog(branch); },
       tipAt: async (ref: string, unixSeconds: number) => { this.crossing("git.tipAt"); return inner.tipAt(ref, unixSeconds); },

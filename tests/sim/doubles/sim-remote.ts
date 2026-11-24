@@ -157,6 +157,12 @@ export class SimRemote implements GitRepo {
     this.throwIfFaulted("isAncestor");
     return this.isAncestorOid(this.fetchedOid(ancestor), this.fetchedOid(descendant));
   }
+  async containingBranches(remote: string, branch: string): Promise<string[]> {
+    await this.hooks.onPortCall("containingBranches");
+    this.throwIfFaulted("containingBranches");
+    const oid = this.fetchedOid(REF_PREFIX + remote + "/" + branch);
+    return [...this.fetched].filter(([, tip]) => this.isAncestorOid(oid, tip)).map(([name]) => name).sort();
+  }
   async countBehind(child: string, base: string): Promise<number> {
     await this.hooks.onPortCall("countBehind");
     this.throwIfFaulted("countBehind");

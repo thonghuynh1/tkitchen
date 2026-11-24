@@ -38,6 +38,7 @@ class RealScriptedRepo implements ScriptedGitRepo {
   lsRemoteHeads(remote: string): ReturnType<GitRepoImpl["lsRemoteHeads"]> { return this.impl.lsRemoteHeads(remote); }
   fetch(remote: string): Promise<void> { return this.impl.fetch(remote); }
   isAncestor(ancestor: string, descendant: string): Promise<boolean> { return this.impl.isAncestor(ancestor, descendant); }
+  containingBranches(remote: string, branch: string): Promise<string[]> { return this.impl.containingBranches(remote, branch); }
   countBehind(child: string, base: string): Promise<number> { return this.impl.countBehind(child, base); }
   creationReflog(branch: string): ReturnType<GitRepoImpl["creationReflog"]> { return this.impl.creationReflog(branch); }
   tipAt(ref: string, unixSeconds: number): Promise<string | null> { return this.impl.tipAt(ref, unixSeconds); }
