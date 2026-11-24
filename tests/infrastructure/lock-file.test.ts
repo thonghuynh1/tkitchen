@@ -202,6 +202,37 @@ describe("FileLock", () => {
     }
   }, 60000);
 
+  it("forced missing-claim recovery schedule has exactly one winner", async () => {
+    const home = makeHome();
+    writeFileSync(join(home, "kitchen.lock"), JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
+    const takeoverPath = join(home, "kitchen.lock.takeover");
+    writeFileSync(takeoverPath, JSON.stringify({ pid: await deadPid(), key: "planted" }));
+    const recoverer = startScheduleWorker(home, "recoverer");
+    let publisher: ReturnType<typeof startScheduleWorker> | undefined;
+    try {
+      const first = await recoverer.next();
+      expect(first.tag).toBe("r-claim-exists");
+      rmSync(takeoverPath, { force: true });
+      recoverer.child.send("resume");
+      const paused = await recoverer.next();
+      expect(paused.tag).toBe("r-before-unlink-lock");
+      publisher = startScheduleWorker(home, "publisher");
+      const publisherResult = await publisher.next();
+      expect(publisherResult.result).toBe("held");
+      recoverer.child.send("resume");
+      const recovererResult = await recoverer.next();
+      expect(recovererResult.result).toBe("acquired");
+      const content = JSON.parse(readFileSync(join(home, "kitchen.lock"), "utf8")) as { pid: number };
+      expect(content.pid).toBe(recoverer.child.pid);
+      recoverer.child.send("stop");
+      publisher.child.send("stop");
+      await Promise.all([recoverer.exited, publisher.exited]);
+    } finally {
+      recoverer.child.kill();
+      publisher?.child.kill();
+    }
+  }, 60000);
+
   it("concurrent stale takeover has exactly one winner across processes", async () => {
     for (let round = 0; round < 10; round++) {
       const home = makeHome();

@@ -125,6 +125,11 @@ interface LockIdentity {
   key: string;
 }
 
+interface TicketSnapshot {
+  pid: number | null;
+  key: string;
+}
+
 async function readIdentityAt(path: string): Promise<LockIdentity | null> {
   let raw: string;
   try {
@@ -141,6 +146,25 @@ async function readIdentityAt(path: string): Promise<LockIdentity | null> {
   const digest = createHash("sha256").update(raw).digest("hex").slice(0, DIGEST_HEX_LENGTH);
   const key = [info.ino, info.mtimeMs, info.size, digest].join("-");
   return { pid: await readPidFromRaw(raw), key };
+}
+
+async function readTicketSnapshotAt(path: string): Promise<TicketSnapshot | null> {
+  let raw: string;
+  try {
+    raw = await readFile(path, "utf8");
+  } catch {
+    return null;
+  }
+  let info;
+  try {
+    info = await stat(path);
+  } catch {
+    return null;
+  }
+  const digest = createHash("sha256").update(raw).digest("hex").slice(0, DIGEST_HEX_LENGTH);
+  const key = [info.ino, info.mtimeMs, info.size, digest].join("-");
+  const plain = parsePid(raw);
+  return { pid: plain !== null ? plain : await readPidFromRaw(raw), key };
 }
 
 type TakeoverResult = "acquired" | "held" | "retry";
@@ -181,10 +205,11 @@ export class FileLock implements Lock {
     return this.publish(this.path, content, this.publishPath);
   }
   private async clearDeadTicket(path: string): Promise<void> {
-    const judged = await readTicketPidAt(path);
-    if (judged !== null && pidIsAlive(judged)) return;
-    if (judged === null && await isFresh(path)) return;
-    const recoveryPath = path + ".recover-" + (judged === null ? "invalid" : String(judged));
+    const judged = await readTicketSnapshotAt(path);
+    if (judged === null) return;
+    if (judged.pid !== null && pidIsAlive(judged.pid)) return;
+    if (judged.pid === null && await isFresh(path)) return;
+    const recoveryPath = path + ".recover-" + (judged.pid === null ? "invalid-" + judged.key : String(judged.pid));
     const recoveryPublishPath = recoveryPath + ".publish-" + this.pid;
     if (!await this.publish(recoveryPath, String(this.pid), recoveryPublishPath)) {
       const recoveryPid = await readTicketPidAt(recoveryPath);
@@ -194,9 +219,8 @@ export class FileLock implements Lock {
       return;
     }
     try {
-      const now = await readTicketPidAt(path);
-      if (now !== judged) return;
-      if (now === null && await isFresh(path)) return;
+      const now = await readTicketSnapshotAt(path);
+      if (now === null || now.key !== judged.key) return;
       await discardAny(path);
     } finally {
       await discardAt(recoveryPath);
@@ -218,7 +242,7 @@ export class FileLock implements Lock {
       const holder = await readIdentityAt(this.path);
       return holder !== null && holder.pid !== null && pidIsAlive(holder.pid) ? "held" : "retry";
     } finally {
-      await discardAt(this.takeoverPath);
+      if (await readTicketPidAt(this.takeoverPath) === this.pid) await discardAt(this.takeoverPath);
     }
   }
   async acquire(): Promise<"acquired" | "held"> {
@@ -235,6 +259,7 @@ export class FileLock implements Lock {
     return "held";
   }
   async release(): Promise<void> {
+    if (await readPidAt(this.path) !== this.pid) return;
     if (!await claimTo(this.path, this.claimPath)) return;
     const claimed = await readPidAt(this.claimPath);
     if (claimed === this.pid) {
