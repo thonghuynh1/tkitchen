@@ -17,6 +17,11 @@ export interface RepoConfig { name: string; path: string; remote: string; forge:
 export type PullRequest = { number: number; head: string; base: string; url: string; author: string; crossRepository: boolean };
 export interface Forge { listOpenPullRequests(repo: RepoConfig): Promise<PullRequest[]>; }
 export interface KitchenConfig { repos: RepoConfig[]; roundMinutes: number; }
+export interface Lock {
+  acquire(): Promise<"acquired" | "held">;
+  release(): Promise<void>;
+  holderPid(): Promise<number | null>;
+}
 export interface Config { load(): Promise<KitchenConfig>; }
 export interface RoundStatus { repo: string; lastCompleteAt: string | null; lastError: string | null; }
 export interface Store {
