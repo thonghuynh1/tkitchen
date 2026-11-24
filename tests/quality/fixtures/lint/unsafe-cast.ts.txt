@@ -1,0 +1,3 @@
+declare const db: { prepare(sql: string): { get(): unknown } };
+const row = db.prepare("SELECT id FROM event").get() as { id: string };
+export { row };

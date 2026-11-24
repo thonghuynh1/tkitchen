@@ -1,0 +1,7 @@
+export function label(status: "behind" | "up_to_date" | "needs_base" | "ambiguous"): string {
+  switch (status) {
+    case "behind": return "behind";
+    case "up_to_date": return "current";
+    case "needs_base": return "base";
+  }
+}
