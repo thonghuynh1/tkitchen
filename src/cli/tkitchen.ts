@@ -7,7 +7,7 @@ import { runRounds } from "../application/round.ts";
 import { serve } from "../application/serve.ts";
 import { FileLock } from "../infrastructure/lock-file.ts";
 import { GitRepoImpl, GIT_TIMEOUT_MS } from "../infrastructure/git/git-repo.ts";
-import { GitHubForge } from "../infrastructure/github/github-forge.ts";
+import { ForgeByKind } from "../infrastructure/forges.ts";
 import { getNotices, formatNotices, getHistory, formatHistory } from "../application/notices.ts";
 import { exportLines, serializeExportLines, InvalidCursorError } from "../application/export.ts";
 import { ReadOnlyExportStore } from "../infrastructure/sqlite/export-store.ts";
@@ -54,7 +54,7 @@ async function runServe(argv: string[]): Promise<number> {
     const result = await serve({
       config, store, clock: new SystemClock(), machine: machineName(),
       makeGit: (repo) => new GitRepoImpl(repo.path, { timeoutMs: gitTimeoutMs() }),
-      forge: new GitHubForge(), scheduler, lock,
+      forge: new ForgeByKind(), scheduler, lock,
       shouldStop: () => stopRequested,
     });
     if (result.kind === "held") {
@@ -83,7 +83,7 @@ async function runRoundCommand(argv: string[]): Promise<number> {
   if (await lock.acquire() === "held") { console.error(await heldMessage(lock)); return 1; }
   const store = new KitchenStore(storePath());
   try {
-    const result = await runRounds({ config, store, clock: new SystemClock(), machine: machineName(), makeGit: (repo) => new GitRepoImpl(repo.path, { timeoutMs: gitTimeoutMs() }), forge: new GitHubForge() }, onlyRepo);
+    const result = await runRounds({ config, store, clock: new SystemClock(), machine: machineName(), makeGit: (repo) => new GitRepoImpl(repo.path, { timeoutMs: gitTimeoutMs() }), forge: new ForgeByKind() }, onlyRepo);
     return result.ok ? 0 : 1;
   } finally { store.close(); await lock.release(); }
 }

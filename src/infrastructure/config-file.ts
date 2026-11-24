@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { join } from "node:path";
 import type { Config, KitchenConfig, RepoConfig } from "../application/ports.ts";
 import { kitchenHome } from "./env.ts";
+import { FORGE_KINDS } from "./forges.ts";
 
 export class ConfigError extends Error { constructor(message: string) { super(message); this.name = "ConfigError"; } }
 const TIMEOUT_MS = 20000;
@@ -61,7 +62,7 @@ export class FileConfig implements Config {
         forge: optString(item, "forge", label + ".forge", "github"),
         bases: parseBases(item["bases"], label + ".bases"),
       };
-      if (repo.forge !== "github") throw new ConfigError(label + ".forge must be \"github\" in v1: " + repo.forge);
+      if (!FORGE_KINDS.includes(repo.forge)) throw new ConfigError(label + ".forge must be one of " + FORGE_KINDS.join(", ") + ": " + repo.forge);
       if (!(await isGitWorkTree(repo.path))) throw new ConfigError(label + ".path is not a git work tree: " + repo.path);
       repos.push(repo);
     }
