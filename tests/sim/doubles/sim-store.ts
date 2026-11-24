@@ -16,6 +16,8 @@ export class SimStore implements Store {
   listBranchStates(): BranchState[] { return this.inner.listBranchStates(); }
   listRoundStatus(): RoundStatus[] { return this.inner.listRoundStatus(); }
   listTriggers(): Trigger[] { return this.inner.listTriggers(); }
+  eventIdAtSeq(seq: number): string | undefined { return this.inner.eventIdAtSeq(seq); }
+  rowsAfter(seq: number): { seq: number; trigger: Trigger }[] { return this.inner.exportRowsAfter(seq); }
   listDispositions(): Disposition[] { return this.inner.listDispositions(); }
   applyRound(input: { repo: string; events: Trigger[]; dispositions: Disposition[]; branchStates: BranchState[]; heads: Map<string, string>; at: string }): void {
     this.beginTx();

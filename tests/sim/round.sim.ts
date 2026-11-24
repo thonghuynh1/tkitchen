@@ -13,6 +13,8 @@ describe("round sweep", () => {
     const failing = batch.results.find((r) => r.violations.length > 0);
     expect(batch.violations, failing === undefined ? batch.summary : formatSeedFailure(failing)).toEqual([]);
     expect(batch.summary).toContain("realGitCalls=0");
+    expect(batch.results.reduce((sum, r) => sum + r.exportResets, 0)).toBeGreaterThan(0);
+    expect(batch.results.reduce((sum, r) => sum + r.exportGenerations, 0)).toBeGreaterThan(batch.results.length);
   }, 300000);
 
   it("mutant: skip child-move recheck is caught", async () => {

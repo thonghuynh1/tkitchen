@@ -9,6 +9,8 @@ import { FileLock } from "../infrastructure/lock-file.ts";
 import { GitRepoImpl, GIT_TIMEOUT_MS } from "../infrastructure/git/git-repo.ts";
 import { GitHubForge } from "../infrastructure/github/github-forge.ts";
 import { getNotices, formatNotices, getHistory, formatHistory } from "../application/notices.ts";
+import { exportLines, serializeExportLines, InvalidCursorError } from "../application/export.ts";
+import { ReadOnlyExportStore } from "../infrastructure/sqlite/export-store.ts";
 
 const USAGE = [
   "Usage: tkitchen <command> [options]",
@@ -17,7 +19,7 @@ const USAGE = [
   "  serve              run the kitchen loop",
   "  round [--repo <name>]   run one Round for one or all repos",
   "  notices [--json] [--history]   show open Notices, or Trigger history with --history",
-  "  export             export records for aiNho (not implemented yet)",
+  "  export --json [--after <cursor>]   export Triggers for aiNho as NDJSON",
   "  --help             show this help",
 ].join("\n");
 
@@ -86,10 +88,46 @@ async function runRoundCommand(argv: string[]): Promise<number> {
   } finally { store.close(); await lock.release(); }
 }
 
+async function writeLine(line: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const flushed = process.stdout.write(line + "\n", (error?: Error | null) => { if (error) reject(error); });
+    if (flushed) { resolve(); return; }
+    const onDrain = (): void => { cleanup(); resolve(); };
+    const onError = (error: Error): void => { cleanup(); reject(error); };
+    const cleanup = (): void => { process.stdout.off("drain", onDrain); process.stdout.off("error", onError); };
+    process.stdout.once("drain", onDrain);
+    process.stdout.once("error", onError);
+  });
+}
+
+async function runExport(argv: string[]): Promise<number> {
+  let seenJson = false;
+  let after: string | undefined;
+  for (let i = 1; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--json") { if (seenJson) { console.error("unknown argument: " + arg); return EXIT_USAGE; } seenJson = true; }
+    else if (arg === "--after") {
+      if (after !== undefined) { console.error("unknown argument: " + arg); return EXIT_USAGE; }
+      const value = argv[i + 1];
+      if (value === undefined) { console.error("invalid cursor"); return EXIT_USAGE; }
+      after = value; i++;
+    } else { console.error("unknown argument: " + arg); return EXIT_USAGE; }
+  }
+  if (!seenJson) { console.error(USAGE); return EXIT_USAGE; }
+  const store = new ReadOnlyExportStore(storePath());
+  try {
+    let lines: string[];
+    try { lines = serializeExportLines(exportLines(store, { machine: machineName(), after })); }
+    catch (e) { if (e instanceof InvalidCursorError) { console.error("invalid cursor"); return EXIT_USAGE; } throw e; }
+    for (const line of lines) await writeLine(line);
+    return 0;
+  } finally { store.close(); }
+}
+
 async function main(argv: string[]): Promise<number> {
   const cmd = argv[0];
   if (cmd === undefined || cmd === "--help" || cmd === "-h" || cmd === "help") { console.log(USAGE); return 0; }
-  if (cmd === "export") { console.log("not implemented yet"); return EXIT_USAGE; }
+  if (cmd === "export") return runExport(argv);
   if (cmd === "serve") return runServe(argv);
   if (cmd === "round") return runRoundCommand(argv);
   if (cmd === "notices") {

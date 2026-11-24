@@ -71,15 +71,14 @@ export class KitchenStore {
   }
   listEvents(): Row[] { return rows(this.db.prepare("SELECT * FROM event ORDER BY seq").all()); }
   listTriggers(): Trigger[] {
-    return rows(this.db.prepare("SELECT * FROM event ORDER BY seq").all()).map((r) => ({
-      id: textCol(r, "id"), source: textCol(r, "source"),
-      threads: parseStringArray(textCol(r, "threads")),
-      actor: textCol(r, "actor"), human: intCol(r, "human") !== 0,
-      addressed: textOrNull(r, "addressed"), at: textCol(r, "at"),
-      text: textOrNull(r, "text"), channel: textOrNull(r, "channel"), url: textOrNull(r, "url"),
-      machine: textCol(r, "machine"),
-      meta: parseTriggerMeta(textCol(r, "meta")),
-    }));
+    return rows(this.db.prepare("SELECT * FROM event ORDER BY seq").all()).map(readTrigger);
+  }
+  eventIdAtSeq(seq: number): string | undefined {
+    const found = rows(this.db.prepare("SELECT id FROM event WHERE seq = ?").all(seq));
+    return found.length > 0 ? textCol(found[0] ?? {}, "id") : undefined;
+  }
+  exportRowsAfter(seq: number): { seq: number; trigger: Trigger }[] {
+    return rows(this.db.prepare("SELECT * FROM event WHERE seq > ? ORDER BY seq").all(seq)).map((r) => ({ seq: intCol(r, "seq"), trigger: readTrigger(r) }));
   }
   listDispositions(): Disposition[] {
     return rows(this.db.prepare("SELECT * FROM disposition ORDER BY event_id, thread, consumer").all()).map((r) => ({
@@ -121,6 +120,17 @@ export class KitchenStore {
   recordRoundError(repo: string, message: string): void {
     this.db.prepare("INSERT INTO round_status (repo, last_complete_at, last_error) VALUES (?, NULL, ?) ON CONFLICT(repo) DO UPDATE SET last_error = excluded.last_error").run(repo, message);
   }
+}
+function readTrigger(r: Row): Trigger {
+  return {
+    id: textCol(r, "id"), source: textCol(r, "source"),
+    threads: parseStringArray(textCol(r, "threads")),
+    actor: textCol(r, "actor"), human: intCol(r, "human") !== 0,
+    addressed: textOrNull(r, "addressed"), at: textCol(r, "at"),
+    text: textOrNull(r, "text"), channel: textOrNull(r, "channel"), url: textOrNull(r, "url"),
+    machine: textCol(r, "machine"),
+    meta: parseTriggerMeta(textCol(r, "meta")),
+  };
 }
 function parseJson(text: string): unknown { return JSON.parse(text) as unknown; }
 function parseStringArray(text: string): string[] {

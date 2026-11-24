@@ -1,6 +1,8 @@
 import { runRounds } from "../../../src/application/round.ts";
 import type { RoundOptions } from "../../../src/application/round.ts";
 import { Developer } from "../actors/developer.ts";
+import { Exporter } from "../actors/exporter.ts";
+import { exportExactlyOnce } from "../oracles/export-exactly-once.ts";
 import { groundTruth } from "../oracles/ground-truth.ts";
 import { incompleteChangesNothing } from "../oracles/incomplete-changes-nothing.ts";
 import { noDuplicates } from "../oracles/no-duplicates.ts";
@@ -15,6 +17,7 @@ import { SimWorld } from "../world/world.ts";
 export interface SeedResult {
   seed: number; violations: Violation[]; traceHash: string;
   trace: readonly TraceEntry[]; realGitCalls: number; rounds: number;
+  exportResets: number; exportGenerations: number;
 }
 export interface SeedOptions { roundOptions?: RoundOptions; }
 
@@ -34,6 +37,7 @@ export async function runSeed(seed: number, options: SeedOptions = {}): Promise<
   let rounds = 0;
   try {
     const developer = new Developer({ rng: world.rng, remote: world.remote, forge: world.forge, config: world.config, trace: world.trace, clock: world.clock });
+    const exporter = new Exporter(world);
     developer.createInitialTree(MIN_BRANCHES + world.rng.nextInt(BRANCH_SPAN));
     const doRound = async (interleave = true, allowFaults = true): Promise<void> => {
       world.clock.advance(ROUND_ADVANCE_MS);
@@ -84,16 +88,19 @@ export async function runSeed(seed: number, options: SeedOptions = {}): Promise<
       if (result.ok && faultArmed && options.roundOptions?.ignoreForgeFailure === true) violations.push(...groundTruth.check(world));
     };
     await doRound();
+    exporter.run();
     const steps = MIN_STEPS + world.rng.nextInt(STEP_SPAN);
     for (let step = 0; step < steps; step++) {
       developer.act();
-      if ((step + 1) % ROUND_EVERY_STEPS === 0) await doRound();
+      if ((step + 1) % ROUND_EVERY_STEPS === 0) { await doRound(); exporter.run(); exporter.maybeReset(); }
     }
     world.remote.clearGitFaults();
     world.forge.clearFaults();
     world.gitFaultPending = false;
     world.forgeFaultPending = false;
     await doRound(false, false);
+    exporter.run();
+    violations.push(...exportExactlyOnce.check(world));
     violations.push(...progress.check(world));
     const eventsBefore = world.store.eventCount();
     const dispositionsBefore = world.store.dispositionCount();
@@ -102,7 +109,7 @@ export async function runSeed(seed: number, options: SeedOptions = {}): Promise<
     violations.push(...noDuplicates.check(world));
     violations.push(...noTxAcrossPort.check(world));
     if (world.realGitCalls > 0) violations.push({ oracle: "real-git-in-sim", kind: "safety", detail: "real git executed " + world.realGitCalls + " time(s) inside a sim" });
-    return { seed, violations, traceHash: world.trace.hash(), trace: [...world.trace.all()], realGitCalls: world.realGitCalls, rounds };
+    return { seed, violations, traceHash: world.trace.hash(), trace: [...world.trace.all()], realGitCalls: world.realGitCalls, rounds, exportResets: world.exportResetCount, exportGenerations: world.exportGenerations.length };
   } finally {
     world.dispose();
   }
@@ -124,7 +131,8 @@ export async function runBatch(seeds: number[], options: SeedOptions = {}): Prom
   for (const seed of seeds) results.push(await runSeed(seed, options));
   const violations = results.flatMap((r) => r.violations);
   const realGitCalls = results.reduce((sum, r) => sum + r.realGitCalls, 0);
-  return { results, violations, summary: "round seeds=" + results.length + " violations=" + violations.length + " realGitCalls=" + realGitCalls };
+  const exportResets = results.reduce((sum, r) => sum + r.exportResets, 0);
+  return { results, violations, summary: "round seeds=" + results.length + " violations=" + violations.length + " realGitCalls=" + realGitCalls + " exportResets=" + exportResets };
 }
 
 export function seedsFromEnv(): number[] {

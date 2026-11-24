@@ -13,6 +13,7 @@ import { SeededIds, SeededRandom } from "./rng.ts";
 import { Trace } from "./trace.ts";
 
 export interface QuietDelta { events: number; dispositions: number; }
+export interface ExportGeneration { ids: string[]; seqs: number[]; storeIds: string[]; }
 
 const REMOTE = "origin";
 const REPO = "sim";
@@ -24,7 +25,9 @@ export class SimWorld {
   readonly ids = new SeededIds();
   readonly trace = new Trace();
   readonly config: SimConfig;
-  readonly store: SimStore;
+  store: SimStore;
+  readonly exportGenerations: ExportGeneration[] = [{ ids: [], seqs: [], storeIds: [] }];
+  exportResetCount = 0;
   readonly remote: SimRemote;
   readonly forge: SimForge;
   incompleteSnapshot: string | null = null;
@@ -34,11 +37,13 @@ export class SimWorld {
   realGitCalls = 0;
   currentPortMethod = "";
   quietDelta: QuietDelta | null = null;
-  private readonly dir: string;
+  private readonly dirs: string[] = [];
+  private dir: string;
   constructor(seed: number) {
     this.seed = seed;
     this.rng = new SeededRandom(seed);
     this.dir = mkdtempSync(join(tmpdir(), "tkitchen-sim-"));
+    this.dirs.push(this.dir);
     const inner = new KitchenStore(join(this.dir, "kitchen.db"));
     this.store = new SimStore(inner);
     this.config = new SimConfig({ name: REPO, path: "sim", remote: REMOTE, forge: "github", bases: {} });
@@ -76,9 +81,22 @@ export class SimWorld {
     this.realGitCalls += 1;
     this.trace.record(this.clock.nowMs(), "git.real", "counted git " + args.join(" "));
   }
+  replaceStoreWithFresh(): void {
+    this.store.close();
+    this.dir = mkdtempSync(join(tmpdir(), "tkitchen-sim-"));
+    this.dirs.push(this.dir);
+    this.store = new SimStore(new KitchenStore(join(this.dir, "kitchen.db")));
+    this.exportGenerations.push({ ids: [], seqs: [], storeIds: [] });
+    this.trace.record(this.clock.nowMs(), "world.replace-store", "fresh store generation " + this.exportGenerations.length);
+  }
+  currentExportGeneration(): ExportGeneration {
+    const gen = this.exportGenerations[this.exportGenerations.length - 1];
+    if (gen === undefined) throw new Error("no export generation");
+    return gen;
+  }
   dispose(): void {
     setGitProcessGuard(null);
     this.store.close();
-    rmSync(this.dir, { recursive: true, force: true });
+    for (const dir of this.dirs) rmSync(dir, { recursive: true, force: true });
   }
 }
