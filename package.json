@@ -15,11 +15,13 @@
     "test:sim": "vitest run --config vitest.sim.config.ts",
     "typecheck": "tsgo --noEmit",
     "verify:structure": "node scripts/check-module-structure.mjs",
-    "verify": "npm run lint && npm run typecheck && npm run verify:structure && npm test && npm run test:sim --if-present"
+    "verify": "npm run lint && npm run typecheck && npm run seams && npm run verify:structure && npm test && npm run test:sim --if-present",
+    "seams": "depcruise src tests scripts --config .dependency-cruiser.cjs"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
+    "dependency-cruiser": "^18.9.0",
     "oxlint": "^1.94.0",
     "tsrs": "^0.25.0-ts7.1.0-beta",
     "typescript": "^5.8.3",

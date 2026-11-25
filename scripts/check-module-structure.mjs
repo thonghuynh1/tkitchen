@@ -1,11 +1,12 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { join, relative, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const MAX_MODULE_LINES = 800;
 
 const SOURCE_FILE = /\.ts$/;
 const MODULE_TESTS = /^src\/modules\/[^/]+\/tests\//;
+const ADAPTERS = /^src\/modules\/[^/]+\/lib\/adapters\//;
 const ENV_PATTERNS = [
   { pattern: /Date\.now\(/g, label: "Date.now()" },
   { pattern: /new Date\(\s*\)/g, label: "new Date()" },
@@ -21,46 +22,6 @@ export function lineCount(text) {
   return /\r?\n$/.test(text) ? lines - 1 : lines;
 }
 
-export function importSpecifiers(text) {
-  const specifiers = [];
-  for (const match of text.matchAll(/(?:^|[\s;])(?:import|export)\b[^"'\`;]*?\bfrom\s*["']([^"']+)["']/g)) specifiers.push(match[1]);
-  for (const match of text.matchAll(/(?:^|[\s;])import\s*["']([^"']+)["']/g)) specifiers.push(match[1]);
-  for (const match of text.matchAll(/\bimport\(\s*["']([^"']+)["']\s*\)/g)) specifiers.push(match[1]);
-  return specifiers;
-}
-
-function normalize(path) {
-  const parts = [];
-  for (const part of path.replaceAll("\\", "/").split("/")) {
-    if (part === "" || part === ".") continue;
-    if (part === "..") parts.pop();
-    else parts.push(part);
-  }
-  return parts.join("/");
-}
-
-const PURE_LIB = /^src\/modules\/[^/]+\/lib\/(?!adapters\/)/;
-const ADAPTERS = /^src\/modules\/[^/]+\/lib\/adapters\//;
-const ADAPTERS_ENTRY = /^src\/modules\/[^/]+\/adapters\.ts$/;
-const DETERMINISTIC_BUILTINS = new Set(["node:crypto"]);
-
-function inspectImports(path, text, errors) {
-  if (!PURE_LIB.test(path)) return;
-  for (const specifier of importSpecifiers(text)) {
-    if (specifier.startsWith("node:")) {
-      if (!DETERMINISTIC_BUILTINS.has(specifier)) {
-        errors.push(path + ": imports " + specifier + "; a module's lib stays pure, only lib/adapters may import Node built-ins");
-      }
-      continue;
-    }
-    if (!specifier.startsWith(".")) continue;
-    const target = normalize(join(dirname(path), specifier));
-    if (ADAPTERS.test(target) || ADAPTERS_ENTRY.test(target) || target.startsWith("src/cli/")) {
-      errors.push(path + ": imports " + target + "; a module's lib stays pure and may not import adapters or src/cli, use a port");
-    }
-  }
-}
-
 function inspectEnv(path, text, errors) {
   if (ADAPTERS.test(path)) return;
   for (const { pattern, label } of ENV_PATTERNS) {
@@ -74,13 +35,12 @@ function inspectEnv(path, text, errors) {
 export function inspect(files) {
   const errors = [];
   for (const [rawPath, text] of Object.entries(files)) {
-    const path = normalize(rawPath);
+    const path = rawPath.replaceAll("\\", "/");
     if (MODULE_TESTS.test(path)) continue;
     const lines = lineCount(text);
     if (lines > MAX_MODULE_LINES) {
       errors.push(path + ": " + lines + " lines exceeds the " + MAX_MODULE_LINES + "-line module budget");
     }
-    inspectImports(path, text, errors);
     inspectEnv(path, text, errors);
   }
   return errors;
@@ -109,6 +69,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     console.error(result.errors.join("\n"));
     process.exitCode = 1;
   } else {
-    console.log("Module structure holds: " + result.count + " production modules (" + (relative(process.cwd(), directory) || ".") + ").");
+    console.log("Environment and size rules hold: " + result.count + " production files (" + (relative(process.cwd(), directory) || ".") + ").");
   }
 }
