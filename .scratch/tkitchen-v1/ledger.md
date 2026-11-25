@@ -15,7 +15,7 @@ Requirement: a standalone package, **tkitchen** (the kitchen), that takes orders
 
 ## Open decisions
 
-- K1 open, waits-on: user. **The workspace**: where people place orders by tagging ("fix bug", "investigate", ...), several users, replacing "pasted Teams/Slack discussion" (user, 2026-11-22). Candidates: a Teams or Slack channel, GitHub issue/PR comments, a web page.
+- K1 answered 2026-11-25 (user): a hosted kanban board where each card is a thread and `@waiter` makes a Trigger; charted as `.scratch/waiter-board/map.md`. Was: open, waits-on: user. **The workspace**: where people place orders by tagging ("fix bug", "investigate", ...), several users, replacing "pasted Teams/Slack discussion" (user, 2026-11-22). Candidates: a Teams or Slack channel, GitHub issue/PR comments, a web page.
 - K2 open, waits-on: user. Who may place an order and which kinds each person may order (allowlist, trust, mandate per order; plan: untrusted text inlined as id + summary).
 - K3 open, waits-on: user. Which station cooks a workspace order ("fix bug" -> tstack captain dispatch, a plain Pi agent, a human).
 - K4 open, waits-on: user. Where the kitchen runs on each machine (standalone process started at power-on, inside aiLau at home, herdr), and how work laptop rules apply (outbound only, no inbound port, Node 22).
