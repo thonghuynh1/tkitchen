@@ -20,7 +20,8 @@ Verification profile: model+dst. Reason: membership changes (invite, remove) mus
 - D3 accepted (user, 2026-11-25): any member may write `@waiter`; only the card owner's bot acts, on the owner's machine.
 - D4 accepted (user, 2026-11-25): v1 waiter reads the thread and replies only (observe mode). Real actions (tstack dispatch, PRs) come later.
 - D5 accepted (user, 2026-11-25): fixed columns Todo / Doing / Done; only people move cards in v1.
-- D6 accepted (user, 2026-11-25): a new repo, separate from tkitchen. Name open (K-name).
+- D6 superseded by D11 (2026-11-25). Was: a new repo, separate from tkitchen.
+- D11 accepted (user, 2026-11-25; supersedes D6): the board is built inside tkitchen, and tkitchen is restructured into vertical modules on cookout's patterns first. Plan: `.scratch/kitchen-modules/overview.md`. K-name closed (no new repo).
 
 ## Open
 
@@ -36,7 +37,7 @@ Verification profile: model+dst. Reason: membership changes (invite, remove) mus
 - K-boardstore open, waits-on: repo. Where a user's board (list of cards) lives: a Durable Object per user, or D1.
 - K-retention open, waits-on: user. How long threads are kept and who can delete a card.
 - K-cost superseded by D1 (2026-11-25). Was accepted (repo, 2026-11-25): Durable Objects run on the Workers Free plan, SQLite-backed only; over a daily free limit, further operations of that type fail until 00:00 UTC (developers.cloudflare.com/durable-objects/platform/pricing). Cloudflare Access consumes one seat per signed-in person; once seats run out, new people are blocked (cloudflare-one seat-management). Free seat count not confirmed in docs read.
-- K-name open, waits-on: user. Repo name.
+- K-name closed by D11 (2026-11-25): no new repo.
 
 deliveries: 3 (board + multi-user card chat; `@waiter` Trigger + owner's bot connection; bot reads and replies)
 modules: 2 (new repo; tkitchen glossary/Thread kind, maybe a station)
@@ -48,3 +49,4 @@ Size check: open=11 closed=7 waits=[] deliveries=3 modules=2 contract=y trend=+ 
 Size check: open=12 closed=8 waits=[] deliveries=3 modules=2 contract=y trend=+ (D1 re-decided: local portable host)
 Size check: open=11 closed=9 waits=[] deliveries=3 modules=2 contract=y trend=-
 Size check: open=11 closed=11 waits=[] deliveries=3 modules=2 contract=y trend=- (D9 borrow cookout patterns, D10 own shadcn UI)
+Size check: open=10 closed=13 waits=[] deliveries=3 modules=1 contract=y trend=- (D11 build in tkitchen, K-name closed)

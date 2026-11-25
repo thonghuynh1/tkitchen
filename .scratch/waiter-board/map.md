@@ -7,7 +7,7 @@ A local-hosted kanban board, run on whichever machine hosts it and exposed at a 
 ## Notes
 
 - Grill ledger: [ledger.md](ledger.md) (decisions D1–D7); evidence: [grounding.md](grounding.md). Verification profile: model+dst.
-- Lives in tkitchen's `.scratch/` until the new repo exists (D6), then moves with its ledger.
+- Built inside tkitchen (D11). The restructure that comes first: [kitchen-modules plan](../kitchen-modules/overview.md). Board features land as modules on its skeleton (phase 9).
 - Answers tkitchen K1 (the workspace). Words follow tkitchen `CONTEXT.md`: a ping is a **Trigger**, a card is a **Thread** of the new kind `board:<card>`.
 - Skills: `/trek` walks this map one ticket, one slice; `grill-with-docs` + `domain-modeling` for grilling tickets.
 - Durable Pi plan: `my-home/.scratch/durable-pi/plan.md`.
@@ -19,7 +19,7 @@ A local-hosted kanban board, run on whichever machine hosts it and exposed at a 
 - [D3 Who may ping](ledger.md): any member writes `@waiter`; only the owner's bot acts, on the owner's machine.
 - [D4 Waiter v1](ledger.md): reads the thread and replies only.
 - [D5 Columns](ledger.md): Todo / Doing / Done, moved by people only.
-- [D6 Repo](ledger.md): a new repo, separate from tkitchen; name open.
+- [D11 Repo](ledger.md): built inside tkitchen, after restructuring it into vertical modules (supersedes D6).
 - [D7 Sign-in](ledger.md): GitHub OAuth in the Worker; a person is `github:<numeric id>`.
 - [D8 Board per host](ledger.md): each host has its own board and store; nothing syncs between hosts.
 - [D9 Borrow cookout's patterns](ledger.md): mattpocock/cookout has no license, so we rewrite its patterns (SSE with revocation, webhook delivery with retries, module seams, lint ratchet) on our own stack, not fork it.
