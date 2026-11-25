@@ -10,13 +10,14 @@
     "node": ">=22.19.0"
   },
   "scripts": {
-    "lint": "oxlint",
+    "lint": "node scripts/lint-ratchet.ts",
     "test": "vitest run",
     "test:sim": "vitest run --config vitest.sim.config.ts",
     "typecheck": "tsgo --noEmit",
     "verify:structure": "node scripts/check-module-structure.mjs",
     "verify": "npm run lint && npm run typecheck && npm run seams && npm run verify:structure && npm test && npm run test:sim --if-present",
-    "seams": "depcruise src tests scripts --config .dependency-cruiser.cjs"
+    "seams": "depcruise src tests scripts --config .dependency-cruiser.cjs",
+    "lint:baseline": "node scripts/lint-ratchet.ts --write"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
