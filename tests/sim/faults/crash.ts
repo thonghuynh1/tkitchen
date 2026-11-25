@@ -1,4 +1,9 @@
-import type { Config, Forge, GitRepo, Lock, Scheduler, Store } from "../../../src/modules/platform/lib/ports.ts";
+import type { Config } from "../../../src/modules/config/index.ts";
+import type { Forge } from "../../../src/modules/forge/index.ts";
+import type { GitRepo } from "../../../src/modules/git/index.ts";
+import type { Lock } from "../../../src/modules/lock/index.ts";
+import type { Scheduler } from "../../../src/modules/platform/index.ts";
+import type { Store } from "../../../src/modules/triggers/index.ts";
 
 export class CrashError extends Error {
   constructor(message: string) { super(message); this.name = "CrashError"; }

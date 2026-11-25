@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { git, cli } from "../helpers.ts";
-import { createGitRunner, GitRepoImpl, GIT_TIMEOUT_MS } from "../../src/modules/git/lib/adapters/git-repo.ts";
-import { PortError } from "../../src/modules/platform/lib/ports.ts";
+import { createGitRunner, GitRepoImpl, GIT_TIMEOUT_MS } from "../../src/modules/git/adapters.ts";
+import { PortError } from "../../src/modules/platform/index.ts";
 
 const SLOW_TIMEOUT_MS = 200;
 const ONE_SECOND_MS = 1000;

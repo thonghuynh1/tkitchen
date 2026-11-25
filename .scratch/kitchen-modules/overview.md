@@ -55,9 +55,10 @@ src/
 │   ├── config/     Config contract and the config file                        (was infrastructure/config-file.ts)
 │   ├── lock/       Lock contract and the lock file                            (was infrastructure/lock-file.ts)
 │   └── <module>/
-│       ├── index.ts        the only file other modules and suites import
+│       ├── index.ts        pure entry: contracts and pure operations; any module may import it
+│       ├── adapters.ts     Node entry: the implementations; only src/cli, src/index.ts, other adapters and tests import it
 │       ├── web.ts          browser-safe entry, only when the module has one
-│       ├── lib/            pure internals
+│       ├── lib/            pure internals; lib/contract.ts holds the module's contracts
 │       ├── lib/adapters/   the only internals that touch node:*, fs, processes, sockets
 │       └── tests/          private unit tests, importing ../index.ts only
 ├── web/            the React app; shadcn components in src/web/components/ui

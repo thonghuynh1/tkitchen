@@ -1,4 +1,4 @@
-import type { Ids, Random } from "../../../src/modules/platform/lib/ports.ts";
+import type { Ids, Random } from "../../../src/modules/platform/index.ts";
 
 const UINT32 = 4294967296;
 const INCREMENT = 0x6d2b79f5;

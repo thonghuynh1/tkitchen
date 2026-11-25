@@ -1,16 +1,15 @@
 #!/usr/bin/env node
 import { join } from "node:path";
-import { FileConfig, ConfigError } from "../modules/config/lib/adapters/config-file.ts";
-import { KitchenStore } from "../modules/triggers/lib/adapters/store.ts";
-import { InterruptibleScheduler, kitchenHome, machineName, SystemClock } from "../modules/platform/lib/adapters/env.ts";
-import { runRounds } from "../modules/rounds/lib/round.ts";
-import { serve } from "../modules/rounds/lib/serve.ts";
-import { FileLock } from "../modules/lock/lib/adapters/lock-file.ts";
-import { GitRepoImpl, GIT_TIMEOUT_MS } from "../modules/git/lib/adapters/git-repo.ts";
-import { ForgeByKind } from "../modules/forge/lib/adapters/forges.ts";
-import { getNotices, formatNotices, getHistory, formatHistory } from "../modules/notices/lib/notices.ts";
-import { exportLines, serializeExportLines, InvalidCursorError } from "../modules/export/lib/export.ts";
-import { ReadOnlyExportStore } from "../modules/export/lib/adapters/export-store.ts";
+import { FileConfig, ConfigError } from "../modules/config/adapters.ts";
+import { KitchenStore } from "../modules/triggers/adapters.ts";
+import { InterruptibleScheduler, kitchenHome, machineName, SystemClock } from "../modules/platform/adapters.ts";
+import { runRounds, serve } from "../modules/rounds/index.ts";
+import { FileLock } from "../modules/lock/adapters.ts";
+import { GitRepoImpl, GIT_TIMEOUT_MS } from "../modules/git/adapters.ts";
+import { ForgeByKind } from "../modules/forge/adapters.ts";
+import { getNotices, formatNotices, getHistory, formatHistory } from "../modules/notices/index.ts";
+import { exportLines, serializeExportLines, InvalidCursorError } from "../modules/export/index.ts";
+import { ReadOnlyExportStore } from "../modules/export/adapters.ts";
 
 const USAGE = [
   "Usage: tkitchen <command> [options]",

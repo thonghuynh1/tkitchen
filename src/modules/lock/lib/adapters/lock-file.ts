@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
 import { link, mkdir, readdir, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
-import type { Lock } from "../../../platform/lib/ports.ts";
-import { kitchenHome } from "../../../platform/lib/adapters/env.ts";
+import type { Lock } from "../contract.ts";
+
+import { kitchenHome } from "../../../platform/adapters.ts";
+
 
 const MAX_ACQUIRE_ATTEMPTS = 100;
 const LOCK_WRITE_GRACE_MS = 1000;

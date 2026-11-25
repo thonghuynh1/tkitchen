@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import type { GitRepo } from "../../src/modules/platform/lib/ports.ts";
+import type { GitRepo } from "../../src/modules/git/index.ts";
 
 export interface Scripting {
   advance: (branch: string) => Promise<string>;

@@ -3,7 +3,7 @@
  * Stated limit: a store replaced by one identical up to the cursor is not
  * detected as a reset; harmless because aiNho dedupes by (machine, id).
  */
-import type { Trigger } from "../../triggers/lib/trigger.ts";
+import type { Trigger } from "../../triggers/index.ts";
 
 export interface ExportRow { seq: number; trigger: Trigger; }
 

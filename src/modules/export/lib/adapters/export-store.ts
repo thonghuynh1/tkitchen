@@ -1,8 +1,8 @@
 import { DatabaseSync } from "node:sqlite";
 import { existsSync } from "node:fs";
 import type { ExportReadPort, ExportRow } from "../export.ts";
-import type { Trigger } from "../../../triggers/lib/trigger.ts";
-import { textCol, textOrNull, intCol } from "../../../triggers/lib/adapters/store.ts";
+import type { Trigger } from "../../../triggers/index.ts";
+import { textCol, textOrNull, intCol } from "../../../triggers/adapters.ts";
 
 type Row = Record<string, unknown>;
 function rows(v: unknown): Row[] { return Array.isArray(v) ? v.filter((r): r is Row => typeof r === "object" && r !== null) : []; }

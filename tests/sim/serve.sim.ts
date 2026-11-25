@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
-import type { Config, GitRepo, KitchenConfig, RepoConfig, Scheduler } from "../../src/modules/platform/lib/ports.ts";
-import { serve } from "../../src/modules/rounds/lib/serve.ts";
-import type { ServeResult } from "../../src/modules/rounds/lib/serve.ts";
+import type { Config, KitchenConfig, RepoConfig } from "../../src/modules/config/index.ts";
+import type { GitRepo } from "../../src/modules/git/index.ts";
+import type { Scheduler } from "../../src/modules/platform/index.ts";
+import { serve } from "../../src/modules/rounds/index.ts";
+import type { ServeResult } from "../../src/modules/rounds/index.ts";
 import { SimWorld } from "./world/world.ts";
 import { SimLock, SimLockSystem } from "./doubles/sim-lock.ts";
 import { CrashError, CrashInjector } from "./faults/crash.ts";

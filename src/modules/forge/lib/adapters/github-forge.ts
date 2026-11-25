@@ -1,7 +1,10 @@
 import { exec, execFile, spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
-import { PortError } from "../../../platform/lib/ports.ts";
-import type { Forge, PullRequest, RepoConfig } from "../../../platform/lib/ports.ts";
+import { PortError } from "../../../platform/index.ts";
+
+import type { Forge, PullRequest } from "../contract.ts";
+import type { RepoConfig } from "../../../config/index.ts";
+
 
 export interface GhRunResult { stdout: string; stderr: string; code: number; }
 export type GhRunner = (args: string[], cwd: string) => Promise<GhRunResult>;

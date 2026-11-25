@@ -14,6 +14,12 @@ describe("pure lib rule", () => {
     expect(errors).toHaveLength(1);
     expect(errors[0]).toContain("lib stays pure");
   });
+  it("lib importing another module's adapters entry fails", () => {
+    expect(inspect({ [LIB]: "import { a } from \"../../git/adapters.ts\";\nexport { a };\n" })).toHaveLength(1);
+  });
+  it("lib importing another module's index passes", () => {
+    expect(inspect({ [LIB]: "import { a } from \"../../git/index.ts\";\nexport { a };\n" })).toHaveLength(0);
+  });
   it("lib importing its own adapters fails", () => {
     expect(inspect({ [LIB]: "import { a } from \"./adapters/y.ts\";\nexport { a };\n" })).toHaveLength(1);
   });

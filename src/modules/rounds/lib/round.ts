@@ -1,12 +1,12 @@
-import { PortError } from "../../platform/lib/ports.ts";
-import type { Clock, Config, Forge, GitRepo, PullRequest, RepoConfig, Store } from "../../platform/lib/ports.ts";
-import { computeWatchedBranches, statusForBehind } from "../../branches/lib/branch.ts";
-import type { BranchState } from "../../branches/lib/branch.ts";
-import { resolveBase, markCycles } from "../../branches/lib/base.ts";
-import type { BaseEvidence, BaseResult } from "../../branches/lib/base.ts";
-import { baseMovedTrigger, threadFor } from "../../triggers/lib/trigger.ts";
-import type { Trigger } from "../../triggers/lib/trigger.ts";
-import type { Disposition } from "../../triggers/lib/disposition.ts";
+import { PortError } from "../../platform/index.ts";
+import type { Clock } from "../../platform/index.ts";
+import type { Config, RepoConfig } from "../../config/index.ts";
+import type { Forge, PullRequest } from "../../forge/index.ts";
+import type { GitRepo } from "../../git/index.ts";
+import type { Store, Trigger, Disposition } from "../../triggers/index.ts";
+import { computeWatchedBranches, statusForBehind, resolveBase, markCycles } from "../../branches/index.ts";
+import type { BranchState, BaseEvidence, BaseResult } from "../../branches/index.ts";
+import { baseMovedTrigger, threadFor } from "../../triggers/index.ts";
 
 export interface RoundOptions { skipChildMoveRecheck?: boolean; writeInsideCollect?: boolean; ignoreForgeFailure?: boolean; }
 export interface RoundDeps {

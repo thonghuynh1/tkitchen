@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { join } from "node:path";
-import type { Config, KitchenConfig, RepoConfig } from "../../../platform/lib/ports.ts";
-import { kitchenHome } from "../../../platform/lib/adapters/env.ts";
-import { FORGE_KINDS } from "../../../forge/lib/adapters/forges.ts";
+import type { Config, KitchenConfig, RepoConfig } from "../contract.ts";
+import { kitchenHome } from "../../../platform/adapters.ts";
+import { FORGE_KINDS } from "../../../forge/adapters.ts";
 
 export class ConfigError extends Error { constructor(message: string) { super(message); this.name = "ConfigError"; } }
 const TIMEOUT_MS = 20000;

@@ -6,6 +6,8 @@
 
 Unit tests live in their module's private `tests/` folder and import only `../index.ts`. Cross-cutting suites stay in the top-level `tests/` and import only module entries.
 
+Progress (2026-11-26): phase 2's routing lever (`scripts/route-entries.mjs`) already pointed every test and suite import at module entries (`index.ts` or `adapters.ts`). What is left is moving the unit tests into module `tests/` folders, the tsconfig/vitest globs, and deleting both levers.
+
 ## Changes
 
 - `tests/domain/*.test.ts` → `src/modules/triggers/tests/`, `src/modules/branches/tests/`.

@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
-import { PortError } from "../../../platform/lib/ports.ts";
-import type { GitRepo } from "../../../platform/lib/ports.ts";
+import { PortError } from "../../../platform/index.ts";
+import type { GitRepo } from "../contract.ts";
 
 export interface GitRunResult { stdout: string; stderr: string; code: number; }
 export interface GitRunnerOptions { timeoutMs?: number; }

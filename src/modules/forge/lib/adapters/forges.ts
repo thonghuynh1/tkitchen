@@ -1,5 +1,6 @@
-import { PortError } from "../../../platform/lib/ports.ts";
-import type { Forge, PullRequest, RepoConfig } from "../../../platform/lib/ports.ts";
+import { PortError } from "../../../platform/index.ts";
+import type { Forge, PullRequest } from "../contract.ts";
+import type { RepoConfig } from "../../../config/index.ts";
 import { GitHubForge } from "./github-forge.ts";
 
 export const FORGE_KINDS: readonly string[] = ["github", "none"];

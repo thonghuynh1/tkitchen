@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { GitRepoImpl } from "../../../src/modules/git/lib/adapters/git-repo.ts";
+import { GitRepoImpl } from "../../../src/modules/git/adapters.ts";
 import { incompleteChangesNothing } from "../oracles/incomplete-changes-nothing.ts";
 import { SimWorld } from "../world/world.ts";
 import { pumpRound } from "./run-round.ts";

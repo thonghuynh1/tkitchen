@@ -1,5 +1,5 @@
-import { runRounds } from "../../../src/modules/rounds/lib/round.ts";
-import type { RoundOptions } from "../../../src/modules/rounds/lib/round.ts";
+import { runRounds } from "../../../src/modules/rounds/index.ts";
+import type { RoundOptions } from "../../../src/modules/rounds/index.ts";
 import { Developer } from "../actors/developer.ts";
 import { Exporter } from "../actors/exporter.ts";
 import { exportExactlyOnce } from "../oracles/export-exactly-once.ts";

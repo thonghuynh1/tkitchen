@@ -3,9 +3,8 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { Trigger } from "../trigger.ts";
 import type { Disposition } from "../disposition.ts";
-import type { BranchState } from "../../../branches/lib/branch.ts";
-
-export interface RoundStatus { repo: string; lastCompleteAt: string | null; lastError: string | null; }
+import type { BranchState } from "../../../branches/index.ts";
+import type { RoundStatus } from "../contract.ts";
 
 type Row = Record<string, unknown>;
 function rows(v: unknown): Row[] { return Array.isArray(v) ? v.filter((r): r is Row => typeof r === "object" && r !== null) : []; }

@@ -1,5 +1,6 @@
-import { PortError } from "../../../src/modules/platform/lib/ports.ts";
-import type { GitRepo, Ids } from "../../../src/modules/platform/lib/ports.ts";
+import { PortError } from "../../../src/modules/platform/index.ts";
+import type { GitRepo } from "../../../src/modules/git/index.ts";
+import type { Ids } from "../../../src/modules/platform/index.ts";
 import { GitFaultInjector } from "../faults/git-faults.ts";
 import type { GitFaultKind, GitMethod } from "../faults/git-faults.ts";
 

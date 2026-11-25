@@ -1,7 +1,7 @@
 import { appendFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { GitRepoImpl } from "../../src/modules/git/lib/adapters/git-repo.ts";
+import { GitRepoImpl } from "../../src/modules/git/adapters.ts";
 import { SeededIds } from "../sim/world/rng.ts";
 import { SimRemote } from "../sim/doubles/sim-remote.ts";
 import { git } from "../helpers.ts";

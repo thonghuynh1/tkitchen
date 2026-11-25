@@ -40,6 +40,7 @@ function normalize(path) {
 
 const PURE_LIB = /^src\/modules\/[^/]+\/lib\/(?!adapters\/)/;
 const ADAPTERS = /^src\/modules\/[^/]+\/lib\/adapters\//;
+const ADAPTERS_ENTRY = /^src\/modules\/[^/]+\/adapters\.ts$/;
 const DETERMINISTIC_BUILTINS = new Set(["node:crypto"]);
 
 function inspectImports(path, text, errors) {
@@ -53,8 +54,8 @@ function inspectImports(path, text, errors) {
     }
     if (!specifier.startsWith(".")) continue;
     const target = normalize(join(dirname(path), specifier));
-    if (ADAPTERS.test(target) || target.startsWith("src/cli/")) {
-      errors.push(path + ": imports " + target + "; a module's lib stays pure and may not import lib/adapters or src/cli, use a port");
+    if (ADAPTERS.test(target) || ADAPTERS_ENTRY.test(target) || target.startsWith("src/cli/")) {
+      errors.push(path + ": imports " + target + "; a module's lib stays pure and may not import adapters or src/cli, use a port");
     }
   }
 }

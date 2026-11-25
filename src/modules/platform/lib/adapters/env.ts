@@ -1,7 +1,7 @@
 import { hostname, homedir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { Clock, Ids, Random, Scheduler } from "../ports.ts";
+import type { Clock, Ids, Random, Scheduler } from "../contract.ts";
 
 export class SystemClock implements Clock { now(): Date { return new Date(); } }
 export class SystemScheduler implements Scheduler { sleep(ms: number): Promise<void> { return new Promise((resolve) => { setTimeout(resolve, ms); }); } }

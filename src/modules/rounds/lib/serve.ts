@@ -1,5 +1,10 @@
-import { PortError } from "../../platform/lib/ports.ts";
-import type { Clock, Config, Forge, GitRepo, Lock, RepoConfig, Scheduler, Store } from "../../platform/lib/ports.ts";
+import { PortError } from "../../platform/index.ts";
+import type { Clock, Scheduler } from "../../platform/index.ts";
+import type { Config, RepoConfig } from "../../config/index.ts";
+import type { Forge } from "../../forge/index.ts";
+import type { GitRepo } from "../../git/index.ts";
+import type { Lock } from "../../lock/index.ts";
+import type { Store } from "../../triggers/index.ts";
 import type { RoundDeps, RoundOptions } from "./round.ts";
 import { runRoundForRepo } from "./round.ts";
 

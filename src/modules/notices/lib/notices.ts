@@ -1,8 +1,6 @@
-import type { Store } from "../../platform/lib/ports.ts";
+import type { Store, Trigger, Disposition } from "../../triggers/index.ts";
 import { isOpenStatus, noticeFromState } from "./notice.ts";
 import type { Notice } from "./notice.ts";
-import type { Trigger } from "../../triggers/lib/trigger.ts";
-import type { Disposition } from "../../triggers/lib/disposition.ts";
 
 export interface NoticesResult { notices: Notice[]; rounds: { repo: string; lastCompleteAt: string | null; lastError: string | null }[]; configPath: string | null; }
 export function getNotices(store: Store, configPath: string | null = null): NoticesResult {
