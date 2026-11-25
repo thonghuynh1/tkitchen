@@ -10,7 +10,7 @@ Blocked by:
 
 ## Question
 
-What does the board need so two GitHub users can work on one card: the repo name (K-name), the board page and where a user's list of cards lives (K-boardstore), invite links (one use or many, expiry) and removal that cuts access at once, open sockets included (K-invite), live chat in a card's Durable Object, and how long threads are kept and who may delete a card (K-retention)?
+What does the board need so two GitHub users can work on one card: the repo name (K-name), how the host exposes its URL and whether the work laptop may (K-expose), the board page and where a user's list of cards lives (K-boardstore), invite links (one use or many, expiry) and removal that cuts access at once, open sockets included (K-invite), live chat in a card's Durable Object, and how long threads are kept and who may delete a card (K-retention)?
 
 Owns a placeholder for [@waiter reaches the owner's machine](02-waiter-reaches-the-owner.md): the card records each message with a "mentions waiter" flag and an id, and today does nothing with it.
 

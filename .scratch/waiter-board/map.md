@@ -2,7 +2,7 @@
 
 ## Destination
 
-A hosted kanban board where each card is a Slack-style thread: people sign in with GitHub, the owner invites others by link and can remove them, members chat live, and a message with `@waiter` becomes one tkitchen Trigger that reaches the owner's machine, where a bot reads the thread and replies in it. The way is clear when every ticket below is resolved and cut.
+A local-hosted kanban board, run on whichever machine hosts it and exposed at a URL while it runs, where each card is a Slack-style thread: people sign in with GitHub, the owner invites others by link and can remove them, members chat live, and a message with `@waiter` becomes one tkitchen Trigger in the host's own tkitchen, where a bot on that host reads the thread and replies in it. The way is clear when every ticket below is resolved and cut.
 
 ## Notes
 
@@ -14,14 +14,14 @@ A hosted kanban board where each card is a Slack-style thread: people sign in wi
 
 ## Decisions so far
 
-- [D1 Hosting](ledger.md): Cloudflare Worker + one Durable Object per card; bots dial out over `wss://` (designed fresh in ticket 02, no aiLau prior art).
+- [D1 Hosting](ledger.md): local and portable: the board and the waiter run on the same host (laptop or home PC), exposed at a URL while running; GitHub sign-in decides membership. Replaced Cloudflare hosting.
 - [D2 Users](ledger.md): personal projects first, not work colleagues.
 - [D3 Who may ping](ledger.md): any member writes `@waiter`; only the owner's bot acts, on the owner's machine.
 - [D4 Waiter v1](ledger.md): reads the thread and replies only.
 - [D5 Columns](ledger.md): Todo / Doing / Done, moved by people only.
 - [D6 Repo](ledger.md): a new repo, separate from tkitchen; name open.
 - [D7 Sign-in](ledger.md): GitHub OAuth in the Worker; a person is `github:<numeric id>`.
-- [K-cost](ledger.md): Durable Objects run on the Workers Free plan (SQLite-backed only).
+- [D8 Board per host](ledger.md): each host has its own board and store; nothing syncs between hosts.
 - [How aiLau's cloud extension dials out](wayfinder/04-ailau-cloud-pattern.md): Current branch uses HTTPS snapshot backups, not a WebSocket mailbox; Worker internals are unverified.
 
 ## Slice outcomes
@@ -31,6 +31,8 @@ A hosted kanban board where each card is a Slack-style thread: people sign in wi
 - Notifications when someone is mentioned or the waiter replies (e-mail, browser, none).
 - The waiter doing real work: tstack dispatch, opening PRs, moving cards; when observe mode ends and who approves an action.
 - Whether board threads become trail in aiNho (through the kitchen export, tkitchen K7).
+- One board that moves between hosts (store over R2 + a host lock), instead of one board per host (D8).
+- Hosting the board in the cloud (Cloudflare Worker + Durable Objects) so it is up when no host is on; the earlier D1.
 - Which orchestrator answers in the end (aiLau, a durable Pi, a plain Pi), beyond v1's reply-only bot.
 
 ## Parked ideas

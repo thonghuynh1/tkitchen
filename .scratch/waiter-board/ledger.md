@@ -10,7 +10,10 @@ Verification profile: model+dst. Reason: membership changes (invite, remove) mus
 
 ## Decisions
 
-- D1 accepted (user, 2026-11-25): hosted on Cloudflare: a Worker plus one Durable Object per card; bots dial out over `wss://`. *2026-11-25, ticket 04:* aiLau's `cloud` extension is HTTPS snapshot backup with one shared token, not a `wss://` mailbox, so there is no prior art to reuse; ticket 02 designs the connection from scratch. Hosting itself is unaffected. Alternative: home aiLau behind the existing tunnel (down when the home PC is off).
+- D1 accepted (user, 2026-11-25; supersedes the Cloudflare-hosted D1): the board is local-hosted and portable: it runs on whichever machine hosts it (work laptop or home PC), the waiter runs on that same host, and an `@waiter` Trigger goes straight into that host's tkitchen. While it runs, the host exposes it at a URL; reachability is "who knows the URL", and GitHub sign-in (D7) still decides who is a member. Supersedes: Worker + Durable Object per card; K-cost no longer applies. Consequence: ticket 02 needs no machine-to-machine connector.
+  Flow: host runs board + waiter → exposes a URL → friend opens URL → GitHub sign-in → card → `@waiter` → host's kitchen → waiter replies.
+- D8 accepted (user, 2026-11-25; was K-hostdata): each host has its own board and its own store; a card lives on the machine it was made on. Nothing syncs between hosts. Later option (not v1): one board that moves with the host (upload/download the store over R2 like aiNho sync, plus a host lock so only one machine hosts at a time).
+- K-expose open, waits-on: user. How the host gets its URL (Cloudflare quick tunnel with a random URL, a named tunnel with a fixed hostname, other), and whether the work laptop may expose one (company policy).
 - D2 accepted (user, 2026-11-25): v1 users are people on personal projects, not work colleagues. Work data on personal infrastructure is out until cleared at work.
 - D3 accepted (user, 2026-11-25): any member may write `@waiter`; only the card owner's bot acts, on the owner's machine.
 - D4 accepted (user, 2026-11-25): v1 waiter reads the thread and replies only (observe mode). Real actions (tstack dispatch, PRs) come later.
@@ -30,7 +33,7 @@ Verification profile: model+dst. Reason: membership changes (invite, remove) mus
 - K-machine open, waits-on: user. Which of the owner's machines takes the ping when both are online (tkitchen K6).
 - K-boardstore open, waits-on: repo. Where a user's board (list of cards) lives: a Durable Object per user, or D1.
 - K-retention open, waits-on: user. How long threads are kept and who can delete a card.
-- K-cost accepted (repo, 2026-11-25): Durable Objects run on the Workers Free plan, SQLite-backed only; over a daily free limit, further operations of that type fail until 00:00 UTC (developers.cloudflare.com/durable-objects/platform/pricing). Cloudflare Access consumes one seat per signed-in person; once seats run out, new people are blocked (cloudflare-one seat-management). Free seat count not confirmed in docs read.
+- K-cost superseded by D1 (2026-11-25). Was accepted (repo, 2026-11-25): Durable Objects run on the Workers Free plan, SQLite-backed only; over a daily free limit, further operations of that type fail until 00:00 UTC (developers.cloudflare.com/durable-objects/platform/pricing). Cloudflare Access consumes one seat per signed-in person; once seats run out, new people are blocked (cloudflare-one seat-management). Free seat count not confirmed in docs read.
 - K-name open, waits-on: user. Repo name.
 
 deliveries: 3 (board + multi-user card chat; `@waiter` Trigger + owner's bot connection; bot reads and replies)
@@ -39,3 +42,6 @@ contract: y (new Thread kind `board:<card>`, Trigger source `board`, wire protoc
 Size check: open=12 closed=6 waits=[] deliveries=3 modules=2 contract=y trend==
 Size check: open=11 closed=7 waits=[] deliveries=3 modules=2 contract=y trend=-
 Size check: open=10 closed=8 waits=[] deliveries=3 modules=2 contract=y trend=-
+Size check: open=11 closed=7 waits=[] deliveries=3 modules=2 contract=y trend=+ (D1 reopened)
+Size check: open=12 closed=8 waits=[] deliveries=3 modules=2 contract=y trend=+ (D1 re-decided: local portable host)
+Size check: open=11 closed=9 waits=[] deliveries=3 modules=2 contract=y trend=-
