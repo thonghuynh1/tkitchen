@@ -67,6 +67,13 @@ _Avoid_: alert, notification, warning
 > **Dev:** "And if B merges C later, do we need another **Trigger** to close B's **Notice**?"
 > **Domain expert:** "No. The next **Round** sees B caught up and the **Notice** closes. **Triggers** are history; **Notices** are what is open now."
 
+## Proposed
+
+Not settled until waiter-board ticket 02 decides them (`.scratch/waiter-board/wayfinder/02-waiter-reaches-the-owner.md`):
+
+- A third **Thread** kind, `board:<card>`: one card's chat on the waiter board.
+- A second **Producer**, the board, writing a **Trigger** with source `board` when a message says `@waiter`.
+
 ## Flagged ambiguities
 
 - The vault plan called the kitchen "the yard" until 2026-11-22: resolved, it is **tkitchen**, "the kitchen" in plain words.

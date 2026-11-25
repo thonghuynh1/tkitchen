@@ -1,0 +1,4 @@
+export const kinds = ["git"] as const;
+export function widen<T>(value: unknown, fallback: T): T {
+  return (value ?? fallback) as T;
+}

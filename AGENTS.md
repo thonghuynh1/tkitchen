@@ -4,6 +4,12 @@ tkitchen (the kitchen, named to sit beside tstack) takes orders (Triggers) from 
 
 The kitchen's part of that plan is in `.scratch/tkitchen-v1/plan.md`; read it before designing or building anything here.
 
+tkitchen also hosts the waiter board (`.scratch/waiter-board/map.md`): a local kanban where each card is a chat thread and `@waiter` becomes one Trigger. It grows as more modules under `src/modules/`.
+
+## Code layout and checks
+
+Read `docs/MODULES.md` before adding or moving code: the module layout, its rules, and the checks that enforce them. `npm run verify` runs every check and must pass before each commit. Never loosen a check to make it pass: a change that `npm run lint:guard` flags needs the user's approval first, recorded as a `Lint-approved-by: <name>` trailer on that commit.
+
 ## Agent skills
 
 ### Issue tracker

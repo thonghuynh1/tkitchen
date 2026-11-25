@@ -7,7 +7,8 @@
     "import"
   ],
   "jsPlugins": [
-    "./scripts/oxlint/no-comments.js"
+    "./scripts/oxlint/no-comments.js",
+    "./scripts/oxlint/design-rules.js"
   ],
   "options": {
     "typeAware": true
@@ -68,7 +69,11 @@
     "import/consistent-type-specifier-style": [
       "error",
       "prefer-top-level"
-    ]
+    ],
+    "design/context-terms": "error",
+    "design/no-unsafe-as": "error",
+    "design/no-pass-through": "error",
+    "design/branded-ids": "error"
   },
   "overrides": [
     {

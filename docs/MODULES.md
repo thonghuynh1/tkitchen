@@ -1,30 +1,70 @@
 # Modules
 
-In transition (2026-11-26): the files now live in vertical modules under `src/modules/<module>/`, with pure code in `lib/` and Node-touching code in `lib/adapters/`. The layer rules below are being rewritten for that layout; see `.scratch/kitchen-modules/overview.md`. Until phase 7 rewrites this page: `npm run seams` (dependency-cruiser, `.dependency-cruiser.cjs`) enforces the module seams, one named rule each, with a fixture per rule in `tests/quality/seams.test.ts`. A module's `lib/` outside `lib/adapters/` may not import `lib/adapters/`, `adapters.ts`, `src/cli/`, or a Node built-in other than `node:crypto`. `scripts/check-module-structure.mjs` keeps only the environment rule, which exempts every `lib/adapters/`, and the 800-line budget. Each module has a pure entry, `index.ts`, and when it has Node code an `adapters.ts` entry; a pure `lib/` may import another module's `index.ts`, never its `adapters.ts`. Unit tests live in the module's `tests/` folder and import its entries; `tests/` at the root holds the CLI, sim, contract, quality and deploy suites.
+tkitchen's code lives in vertical modules under `src/modules/<module>/`. Each module owns one part of the kitchen: its contracts, its pure logic, its Node code and its unit tests. The waiter board grows here too, as more modules. Why this shape: [ADR 0001](adr/0001-vertical-modules.md).
 
-tkitchen has four layers under `src/`. Dependencies point inward: a layer may import the layers inside it and must not import the layers outside it.
+## Layout
 
-| Layer | Home | Owns |
+```
+src/modules/<module>/
+├── index.ts        pure entry: contracts and pure operations; any code may import it
+├── adapters.ts     Node entry: the implementations of the contracts
+├── lib/            pure internals; lib/contract.ts holds the module's contracts
+├── lib/adapters/   the only internals that touch node:*, the file system, processes or the clock
+└── tests/          the module's unit tests
+src/cli/tkitchen.ts composition root: wires adapters to contracts
+src/index.ts        package entry: re-exports module entries only
+tests/              cross-module suites: cli, sim, contract, quality, deploy
+```
+
+Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen home), triggers (Trigger, Thread, Disposition, the kitchen store), branches (watched branches, Base resolution), notices, rounds (Round, serve loop), export, git, forge, config, lock.
+
+## Rules
+
+- **Entries only.** Code outside a module reaches it through `index.ts` or `adapters.ts`, never through `lib/` or `tests/`. A module's own tests use its entries too.
+- **Pure lib.** A module's `lib/` outside `lib/adapters/` imports no Node built-in except `node:crypto` (deterministic hashing), and never imports `lib/adapters/`, any `adapters.ts` or `src/cli/`. It reaches the outside world through contracts that the CLI fills with adapters. This keeps the logic runnable in the sim.
+- **Pure index.** `index.ts` exports nothing from `lib/adapters/`. Node code goes behind `adapters.ts`, so importing a module's contracts never loads `node:sqlite` or a child process.
+- **No clock or randomness outside adapters.** Outside `lib/adapters/`, code does not call `Date.now()`, `new Date()` with no arguments, `setTimeout`, `setInterval`, `Math.random()` or `randomUUID()`; it uses the Clock, Scheduler, Random and Ids contracts from platform.
+- **800 lines per file** under `src/`. Split an over-budget file along its seams.
+- **No cycles, no undeclared or unresolvable imports.**
+
+## Checks
+
+`npm run verify` runs all of them, in this order.
+
+| Check | Command | Enforces |
 |---|---|---|
-| Domain | `src/domain/` | Pure branch, Trigger, Disposition, and Notice logic |
-| Application | `src/application/` | Ports and the Round and Notices use cases |
-| Infrastructure | `src/infrastructure/` | SQLite, git, config file, and the system environment |
-| CLI | `src/cli/` | Argument parsing, composition of the other layers, and exit codes |
+| Lint ratchet | `npm run lint` | oxlint over the repo; no file may gain violations of any rule beyond `lint-baseline.json` |
+| Lint config guard | `npm run lint:guard` | no loosening of the checks without the user's `Lint-approved-by:` trailer |
+| Types | `npm run typecheck` | `tsgo --noEmit` |
+| Seams | `npm run seams` | dependency-cruiser, `.dependency-cruiser.cjs`: the entries, pure lib, pure index, cycle and import rules, one named rule each |
+| Environment and size | `npm run verify:structure` | `scripts/check-module-structure.mjs`: the clock rule and the 800-line budget |
+| Tests | `npm test`, `npm run test:sim` | unit, contract, CLI and quality suites; the Round simulation |
 
-## Dependency rule
+Each rule has a failing fixture in `tests/quality/`: `seams.test.ts`, `structure.test.ts`, `lint.test.ts`, `ratchet.test.ts`, `guard.test.ts`.
 
-`src/domain/` stays pure and may import only `src/domain/`. `src/domain/` and `src/application/` must not import `src/infrastructure/` or `src/cli/`; the application talks to the outside world through the ports in `src/application/ports.ts`, and the CLI wires concrete infrastructure implementations to those ports. Infrastructure may import domain and application ports. The CLI may import every layer.
+### Lint ratchet
 
-`scripts/check-module-structure.mjs` enforces this rule over `src/**/*.ts` and exits 1 on a violation. Its pure `inspect(files)` export takes a map of path to source text and returns the error strings, so tests exercise the rule without touching the file system.
+`scripts/lint-ratchet.ts` counts oxlint diagnostics per file and rule and compares them with `lint-baseline.json`. A count above the baseline fails, printing each diagnostic in that bucket as `file:line rule message`. A count below it passes with a note to tighten the baseline. `npm run lint:baseline` rewrites the baseline from a whole-repo run. The ratchet also reads the baseline and `.oxlintrc.json` at the merge base with `origin/main` and refuses a raised count for a rule that was already on there, so a new rule may start with existing violations, and after that the count only goes down.
 
-## Environment rule
+### Lint config guard
 
-Outside `src/infrastructure/`, code must not call `Date.now()`, `new Date()` with no arguments, `setTimeout`, `setInterval`, `Math.random()`, or `randomUUID()`. Use the Clock, Scheduler, Random, and Ids ports from `src/application/ports.ts` instead; `src/infrastructure/env.ts` is their system implementation and the only home of those calls. The structure checker enforces this rule with the message `use the Clock/Scheduler/Random/Ids port`.
+`scripts/lint-config-guard.ts` reads every commit since the merge base, plus the working tree, and flags changes that loosen the checks: a rule lowered, removed or newly off, changed rule options, an override that turns a rule off for new files, an added ignore pattern, a removed plugin, any change to `.dependency-cruiser.cjs`, a new entry in `docs/lint-opt-outs.md`, an edit to an existing checker script, and a changed check script in `package.json`. A flagged change passes only when its commit carries `Lint-approved-by: <name>`, written after the user approved that change. Every rule that is off or loosened today is listed in `docs/lint-opt-outs.md` with its reason.
 
-## Module budget
+### Design rules
 
-No file under `src/` may exceed 800 lines. The structure checker counts lines and fails a file at 801 lines; a file of exactly 800 lines passes. Split an over-budget module along its seams into a deeper module.
+`scripts/oxlint/design-rules.js` holds four rules, written for tkitchen from one-line descriptions ([ADR 0002](adr/0002-borrow-cookout-patterns-not-code.md)):
 
-## Lint
+- `design/context-terms`: a declared name may not use a word that a `CONTEXT.md` term lists under `_Avoid_`; the message names the term to use. It reads `CONTEXT.md` itself, so a new `_Avoid_` entry is enforced at once.
+- `design/no-unsafe-as`: no `as` cast, except `as const` and a cast to a type parameter in scope. Narrow with a type guard instead.
+- `design/no-pass-through`: no file whose only content re-exports one other file. Module `index.ts` and `adapters.ts` are exempt.
+- `design/branded-ids`: an exported `*Id` type alias, or a parameter named `id` or `*Id`, may not be a bare `string` or `number`.
+
+All four apply to every file, tests included. Their violations on 2026-11-26 sit in `lint-baseline.json`.
+
+## Adding a module
+
+Create `src/modules/<name>/` with `lib/contract.ts`, `lib/`, `index.ts`, and `adapters.ts` plus `lib/adapters/` if it needs Node. Export it from `src/index.ts`. Wire its adapters in `src/cli/tkitchen.ts`. Put its unit tests in `tests/`. Add a term to `CONTEXT.md` when it names a new concept.
+
+## Lint backend
 
 `npm run lint` runs oxlint with type-aware rules (`typeAware: true` in `.oxlintrc.json`). The type-aware backend is the `tsrs` package (typescript-go based, `0.25.0-ts7.1.0-beta`, copied from tstack at `bfa26c76`): with `typeAware` on and no backend installed, oxlint 1.94 fails with `Failed to find type-aware linter executable. You may need to add the tsrs or oxlint-tsgolint package to your project?`, and tstack's `package.json` carries both `oxlint ^1.94.0` and that exact `tsrs` version while its `node_modules` contains no `oxlint-tsgolint` package. tkitchen copies that arrangement, so `tsrs` is a devDependency alongside `oxlint`. The floating-promise fixture in `tests/quality/lint.test.ts` proves the type-aware rules are active, because that rule cannot fire without type information.

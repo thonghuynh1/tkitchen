@@ -1,0 +1,4 @@
+export type CardId = string;
+export function cardName(cardId: string): string {
+  return cardId;
+}
