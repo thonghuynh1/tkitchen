@@ -22,6 +22,8 @@ A local-hosted kanban board, run on whichever machine hosts it and exposed at a 
 - [D6 Repo](ledger.md): a new repo, separate from tkitchen; name open.
 - [D7 Sign-in](ledger.md): GitHub OAuth in the Worker; a person is `github:<numeric id>`.
 - [D8 Board per host](ledger.md): each host has its own board and store; nothing syncs between hosts.
+- [D9 Borrow cookout's patterns](ledger.md): mattpocock/cookout has no license, so we rewrite its patterns (SSE with revocation, webhook delivery with retries, module seams, lint ratchet) on our own stack, not fork it.
+- [D10 UI](ledger.md): our own UI, built with shadcn/ui.
 - [How aiLau's cloud extension dials out](wayfinder/04-ailau-cloud-pattern.md): Current branch uses HTTPS snapshot backups, not a WebSocket mailbox; Worker internals are unverified.
 
 ## Slice outcomes
