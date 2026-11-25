@@ -1,9 +1,9 @@
 import { join } from "node:path";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { setGitProcessGuard } from "../../../src/infrastructure/git/git-repo.ts";
-import type { GitRunner } from "../../../src/infrastructure/git/git-repo.ts";
-import { KitchenStore } from "../../../src/infrastructure/sqlite/store.ts";
+import { setGitProcessGuard } from "../../../src/modules/git/lib/adapters/git-repo.ts";
+import type { GitRunner } from "../../../src/modules/git/lib/adapters/git-repo.ts";
+import { KitchenStore } from "../../../src/modules/triggers/lib/adapters/store.ts";
 import { SimConfig } from "../doubles/sim-config.ts";
 import { SimForge } from "../doubles/sim-forge.ts";
 import { SimRemote } from "../doubles/sim-remote.ts";

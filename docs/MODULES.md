@@ -1,5 +1,7 @@
 # Modules
 
+In transition (2026-11-26): the files now live in vertical modules under `src/modules/<module>/`, with pure code in `lib/` and Node-touching code in `lib/adapters/`. The layer rules below are being rewritten for that layout; see `.scratch/kitchen-modules/overview.md`. Until phase 7 rewrites this page, `scripts/check-module-structure.mjs` enforces this: a module's `lib/` outside `lib/adapters/` may not import `lib/adapters/`, `src/cli/`, or a Node built-in other than `node:crypto`. The environment rule exempts every `lib/adapters/`.
+
 tkitchen has four layers under `src/`. Dependencies point inward: a layer may import the layers inside it and must not import the layers outside it.
 
 | Layer | Home | Owns |

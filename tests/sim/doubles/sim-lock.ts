@@ -1,4 +1,4 @@
-import type { Lock } from "../../../src/application/ports.ts";
+import type { Lock } from "../../../src/modules/platform/lib/ports.ts";
 
 export class SimLockSystem {
   private holder: number | null = null;

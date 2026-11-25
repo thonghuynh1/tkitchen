@@ -1,4 +1,4 @@
-import { PortError } from "../../../src/application/ports.ts";
+import { PortError } from "../../../src/modules/platform/lib/ports.ts";
 
 export type GitFaultKind = "timeout" | "failed";
 export type GitMethod = "lsRemoteHeads" | "fetch" | "isAncestor" | "containingBranches" | "countBehind" | "creationReflog" | "tipAt";

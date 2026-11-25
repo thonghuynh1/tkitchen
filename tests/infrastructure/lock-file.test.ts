@@ -6,7 +6,7 @@ import { fork, spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import { dirname, join as pathJoin } from "node:path";
 import { fileURLToPath } from "node:url";
-import { FileLock } from "../../src/infrastructure/lock-file.ts";
+import { FileLock } from "../../src/modules/lock/lib/adapters/lock-file.ts";
 
 function makeHome(): string { return mkdtempSync(join(tmpdir(), "tk-lock-")); }
 

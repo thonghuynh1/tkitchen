@@ -3,9 +3,9 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { git } from "../helpers.ts";
-import { GitRepoImpl } from "../../src/infrastructure/git/git-repo.ts";
-import type { GitRunResult } from "../../src/infrastructure/git/git-repo.ts";
-import { PortError } from "../../src/application/ports.ts";
+import { GitRepoImpl } from "../../src/modules/git/lib/adapters/git-repo.ts";
+import type { GitRunResult } from "../../src/modules/git/lib/adapters/git-repo.ts";
+import { PortError } from "../../src/modules/platform/lib/ports.ts";
 
 const FATAL: GitRunResult = { stdout: "", stderr: "fatal: unable to read reflog: Permission denied", code: 128 };
 const ABSENT: GitRunResult = { stdout: "", stderr: "fatal: ambiguous argument 'refs/heads/nope': unknown revision or path not in the working tree.\nUse '--' to separate paths from revisions, like this:\n'git <command> [<revision>...] -- [<file>...]'", code: 128 };

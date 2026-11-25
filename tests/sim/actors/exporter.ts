@@ -1,4 +1,4 @@
-import { exportLines } from "../../../src/application/export.ts";
+import { exportLines } from "../../../src/modules/export/lib/export.ts";
 import type { SimWorld } from "../world/world.ts";
 
 const RESET_CHANCE = 0.12;

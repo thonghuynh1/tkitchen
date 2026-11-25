@@ -1,4 +1,4 @@
-import type { BranchState } from "../../../src/domain/branch/branch.ts";
+import type { BranchState } from "../../../src/modules/branches/lib/branch.ts";
 import type { Oracle, Violation } from "./oracle.ts";
 import type { SimWorld } from "../world/world.ts";
 

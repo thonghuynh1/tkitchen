@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createHash } from "node:crypto";
-import { triggerId } from "../../src/domain/trigger/trigger.ts";
+import { triggerId } from "../../src/modules/triggers/lib/trigger.ts";
 
 describe("trigger id", () => {
   it("matches the sha256 recipe", () => {

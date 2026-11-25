@@ -3,8 +3,8 @@ import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createGhRunner } from "../../src/infrastructure/github/github-forge.ts";
-import { PortError } from "../../src/application/ports.ts";
+import { createGhRunner } from "../../src/modules/forge/lib/adapters/github-forge.ts";
+import { PortError } from "../../src/modules/platform/lib/ports.ts";
 
 const FAKE_GH_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "fake-gh");
 

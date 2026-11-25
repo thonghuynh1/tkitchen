@@ -38,24 +38,29 @@ function normalize(path) {
   return parts.join("/");
 }
 
+const PURE_LIB = /^src\/modules\/[^/]+\/lib\/(?!adapters\/)/;
+const ADAPTERS = /^src\/modules\/[^/]+\/lib\/adapters\//;
+const DETERMINISTIC_BUILTINS = new Set(["node:crypto"]);
+
 function inspectImports(path, text, errors) {
+  if (!PURE_LIB.test(path)) return;
   for (const specifier of importSpecifiers(text)) {
-    if (!specifier.startsWith(".")) continue;
-    const target = normalize(join(dirname(path), specifier));
-    if (path.startsWith("src/domain/")) {
-      if (!target.startsWith("src/domain/")) {
-        errors.push(path + ": imports " + target + "; src/domain stays pure and may import only src/domain");
+    if (specifier.startsWith("node:")) {
+      if (!DETERMINISTIC_BUILTINS.has(specifier)) {
+        errors.push(path + ": imports " + specifier + "; a module's lib stays pure, only lib/adapters may import Node built-ins");
       }
       continue;
     }
-    if (path.startsWith("src/application/") && (target.startsWith("src/infrastructure/") || target.startsWith("src/cli/"))) {
-      errors.push(path + ": imports " + target + "; src/application may not import src/infrastructure or src/cli, use a port in src/application/ports.ts");
+    if (!specifier.startsWith(".")) continue;
+    const target = normalize(join(dirname(path), specifier));
+    if (ADAPTERS.test(target) || target.startsWith("src/cli/")) {
+      errors.push(path + ": imports " + target + "; a module's lib stays pure and may not import lib/adapters or src/cli, use a port");
     }
   }
 }
 
 function inspectEnv(path, text, errors) {
-  if (path.startsWith("src/infrastructure/")) return;
+  if (ADAPTERS.test(path)) return;
   for (const { pattern, label } of ENV_PATTERNS) {
     for (const match of text.matchAll(pattern)) {
       void match;

@@ -1,4 +1,4 @@
-import { runRounds } from "../../../src/application/round.ts";
+import { runRounds } from "../../../src/modules/rounds/lib/round.ts";
 import type { SimWorld } from "../world/world.ts";
 
 export async function pumpRound(world: SimWorld): Promise<{ ok: boolean }> {

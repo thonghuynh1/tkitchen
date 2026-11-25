@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { defaultGitRunner } from "../../src/infrastructure/git/git-repo.ts";
-import { runRounds } from "../../src/application/round.ts";
+import { defaultGitRunner } from "../../src/modules/git/lib/adapters/git-repo.ts";
+import { runRounds } from "../../src/modules/rounds/lib/round.ts";
 import { SimRemote } from "./doubles/sim-remote.ts";
 import { groundTruth } from "./oracles/ground-truth.ts";
 import { SimWorld } from "./world/world.ts";

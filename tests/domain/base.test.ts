@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { resolveBase, markCycles } from "../../src/domain/base/base.ts";
-import type { BaseEvidence, BaseResult } from "../../src/domain/base/base.ts";
+import { resolveBase, markCycles } from "../../src/modules/branches/lib/base.ts";
+import type { BaseEvidence, BaseResult } from "../../src/modules/branches/lib/base.ts";
 
 function ev(partial: Partial<BaseEvidence>): BaseEvidence {
   return { branch: "B", explicit: null, prTargets: [], creation: null, pushed: new Set(["B", "C", "D", "main"]), ...partial };

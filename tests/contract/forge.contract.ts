@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { PortError } from "../../src/application/ports.ts";
-import type { Forge, PullRequest, RepoConfig } from "../../src/application/ports.ts";
+import { PortError } from "../../src/modules/platform/lib/ports.ts";
+import type { Forge, PullRequest, RepoConfig } from "../../src/modules/platform/lib/ports.ts";
 
 export interface ForgeScripting {
   open: (pr: PullRequest) => void;

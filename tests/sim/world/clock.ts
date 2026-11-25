@@ -1,4 +1,4 @@
-import type { Clock, Scheduler } from "../../../src/application/ports.ts";
+import type { Clock, Scheduler } from "../../../src/modules/platform/lib/ports.ts";
 
 const EPOCH_MS = Date.UTC(2026, 0, 1, 0, 0, 0);
 

@@ -5,80 +5,76 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { inspect } from "../../scripts/check-module-structure.mjs";
 
-describe("layer rule", () => {
-  it("domain importing infrastructure fails", () => {
-    const errors = inspect({ "src/domain/x.ts": "import { a } from \"../infrastructure/y.ts\";\nexport { a };\n" });
+const LIB = "src/modules/rounds/lib/x.ts";
+const ADAPTER = "src/modules/git/lib/adapters/x.ts";
+
+describe("pure lib rule", () => {
+  it("lib importing another module's adapters fails", () => {
+    const errors = inspect({ [LIB]: "import { a } from \"../../git/lib/adapters/y.ts\";\nexport { a };\n" });
     expect(errors).toHaveLength(1);
-    expect(errors[0]).toContain("src/domain stays pure");
+    expect(errors[0]).toContain("lib stays pure");
   });
-  it("application importing infrastructure fails", () => {
-    const errors = inspect({ "src/application/x.ts": "import { a } from \"../infrastructure/y.ts\";\nexport { a };\n" });
+  it("lib importing its own adapters fails", () => {
+    expect(inspect({ [LIB]: "import { a } from \"./adapters/y.ts\";\nexport { a };\n" })).toHaveLength(1);
+  });
+  it("lib importing the cli fails", () => {
+    expect(inspect({ [LIB]: "import { a } from \"../../../cli/y.ts\";\nexport { a };\n" })).toHaveLength(1);
+  });
+  it("lib importing a Node built-in fails", () => {
+    const errors = inspect({ [LIB]: "import { readFile } from \"node:fs/promises\";\nexport { readFile };\n" });
     expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("only lib/adapters may import Node built-ins");
   });
-  it("infrastructure importing domain passes", () => {
-    const errors = inspect({ "src/infrastructure/x.ts": "import { a } from \"../domain/y.ts\";\nexport { a };\n" });
-    expect(errors).toHaveLength(0);
+  it("lib importing node:crypto for hashing passes", () => {
+    expect(inspect({ [LIB]: "import { createHash } from \"node:crypto\";\nexport { createHash };\n" })).toHaveLength(0);
   });
-  it("compact domain import fails", () => {
-    const errors = inspect({ "src/domain/x.ts": "import{a}from\"../infrastructure/y.ts\";\nexport { a };\n" });
-    expect(errors).toHaveLength(1);
-    expect(errors[0]).toContain("src/domain stays pure");
+  it("adapters importing lib and Node built-ins pass", () => {
+    expect(inspect({ [ADAPTER]: "import { a } from \"../y.ts\";\nimport { spawn } from \"node:child_process\";\nexport { a, spawn };\n" })).toHaveLength(0);
   });
-  it("compact application import fails", () => {
-    expect(inspect({ "src/application/x.ts": "import{a}from\"../cli/y.ts\";\nexport { a };\n" })).toHaveLength(1);
-    expect(inspect({ "src/application/x.ts": "import{a}from\"../infrastructure/y.ts\";\nexport { a };\n" })).toHaveLength(1);
+  it("lib importing another module's lib passes", () => {
+    expect(inspect({ [LIB]: "import { a } from \"../../branches/lib/y.ts\";\nexport { a };\n" })).toHaveLength(0);
   });
-  it("compact domain re-export fails", () => {
-    const errors = inspect({ "src/domain/x.ts": "export{a}from\"../infrastructure/y.ts\";\n" });
-    expect(errors).toHaveLength(1);
-    expect(errors[0]).toContain("src/domain stays pure");
-  });
-  it("compact side-effect import and re-export syntax is recognized", () => {
-    expect(inspect({ "src/domain/x.ts": "import\"../infrastructure/y.ts\";\n" })).toHaveLength(1);
-    expect(inspect({ "src/infrastructure/x.ts": "import{a}from\"../domain/y.ts\";\nexport{a};\n" })).toHaveLength(0);
-  });
-  it("domain importing domain passes", () => {
-    const errors = inspect({ "src/domain/x.ts": "import { a } from \"./y.ts\";\nexport { a };\n" });
-    expect(errors).toHaveLength(0);
+  it("compact import and re-export syntax is recognized", () => {
+    expect(inspect({ [LIB]: "import{a}from\"../../git/lib/adapters/y.ts\";\nexport { a };\n" })).toHaveLength(1);
+    expect(inspect({ [LIB]: "export{a}from\"../../git/lib/adapters/y.ts\";\n" })).toHaveLength(1);
+    expect(inspect({ [LIB]: "import\"../../git/lib/adapters/y.ts\";\n" })).toHaveLength(1);
+    expect(inspect({ [ADAPTER]: "import{a}from\"../y.ts\";\nexport{a};\n" })).toHaveLength(0);
   });
 });
 describe("env rule", () => {
-  it("Date.now in application fails naming the Clock port", () => {
-    const errors = inspect({ "src/application/x.ts": "export const t = Date.now();\n" });
+  it("Date.now in a lib fails naming the Clock port", () => {
+    const errors = inspect({ [LIB]: "export const t = Date.now();\n" });
     expect(errors).toHaveLength(1);
     expect(errors[0]).toContain("Clock");
   });
-  it("Date.now in infrastructure env passes", () => {
-    const errors = inspect({ "src/infrastructure/env.ts": "export const t = Date.now();\n" });
-    expect(errors).toHaveLength(0);
+  it("Date.now in an adapter passes", () => {
+    expect(inspect({ "src/modules/platform/lib/adapters/env.ts": "export const t = Date.now();\n" })).toHaveLength(0);
   });
-  it("Math.random in domain fails", () => {
-    const errors = inspect({ "src/domain/x.ts": "export const t = Math.random();\n" });
-    expect(errors).toHaveLength(1);
+  it("Math.random in a lib fails", () => {
+    expect(inspect({ [LIB]: "export const t = Math.random();\n" })).toHaveLength(1);
   });
-  it("checks every env pattern outside infrastructure", () => {
+  it("checks every env pattern outside adapters", () => {
     const samples = ["export const a = Date.now();", "export const b = new Date();", "export const c = setTimeout(() => undefined, 1);", "export const d = setInterval(() => undefined, 1);", "export const e = Math.random();", "export const f = randomUUID();"];
     for (const sample of samples) {
-      const errors = inspect({ "src/application/x.ts": sample + "\n" });
+      const errors = inspect({ [LIB]: sample + "\n" });
       expect(errors).toHaveLength(1);
       expect(errors[0]).toContain("use the Clock/Scheduler/Random/Ids port");
     }
   });
   it("new Date with arguments passes", () => {
-    const errors = inspect({ "src/application/x.ts": "export const t = new Date(0);\n" });
-    expect(errors).toHaveLength(0);
+    expect(inspect({ [LIB]: "export const t = new Date(0);\n" })).toHaveLength(0);
   });
 });
 describe("structure CLI", () => {
-  it("CLI rejects a compact cross-layer import", () => {
+  it("CLI rejects a compact lib-to-adapter import", () => {
     const root = mkdtempSync(join(tmpdir(), "tkitchen-structure-"));
     try {
       mkdirSync(join(root, "scripts"), { recursive: true });
-      mkdirSync(join(root, "src", "domain"), { recursive: true });
-      mkdirSync(join(root, "src", "infrastructure"), { recursive: true });
+      mkdirSync(join(root, "src", "modules", "rounds", "lib"), { recursive: true });
+      mkdirSync(join(root, "src", "modules", "git", "lib", "adapters"), { recursive: true });
       copyFileSync(join(process.cwd(), "scripts", "check-module-structure.mjs"), join(root, "scripts", "check-module-structure.mjs"));
-      writeFileSync(join(root, "src", "domain", "x.ts"), "import{a}from\"../infrastructure/y.ts\"; export{a};\n");
-      writeFileSync(join(root, "src", "infrastructure", "y.ts"), "export const a = 1;\n");
+      writeFileSync(join(root, "src", "modules", "rounds", "lib", "x.ts"), "import{a}from\"../../git/lib/adapters/y.ts\"; export{a};\n");
+      writeFileSync(join(root, "src", "modules", "git", "lib", "adapters", "y.ts"), "export const a = 1;\n");
       let status = 0;
       let output = "";
       try {
@@ -89,17 +85,15 @@ describe("structure CLI", () => {
         output = String(err.stdout ?? "") + String(err.stderr ?? "");
       }
       expect(status).toBe(1);
-      expect(output).toContain("src/domain stays pure");
+      expect(output).toContain("lib stays pure");
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
 });
 describe("module budget", () => {
   it("801 lines fails", () => {
-    const errors = inspect({ "src/domain/x.ts": Array(801).fill("export const x = 1;").join("\n") + "\n" });
-    expect(errors).toHaveLength(1);
+    expect(inspect({ [LIB]: Array(801).fill("export const x = 1;").join("\n") + "\n" })).toHaveLength(1);
   });
   it("800 lines passes", () => {
-    const errors = inspect({ "src/domain/x.ts": Array(800).fill("export const x = 1;").join("\n") + "\n" });
-    expect(errors).toHaveLength(0);
+    expect(inspect({ [LIB]: Array(800).fill("export const x = 1;").join("\n") + "\n" })).toHaveLength(0);
   });
 });
