@@ -1,6 +1,6 @@
 ---
 repo: F:/MyWork/tkitchen
-status: ready-for-human
+status: closed
 type: HITL
 covers: [RB-008 (Node 22.22), RB-011 (measured workload), US-004 (real sign-in), DEC-007 (real gh), Edges (setup on both machines)]
 ---
@@ -40,3 +40,9 @@ Nothing new. A human installs tkitchen on the home machine and on the work lapto
 ## Blocked by
 
 - Local: `05-github-pr-targets-via-gh.md`, `06-round-fault-tolerance-under-dst.md`, `07-serve-loop-and-single-instance-lock.md`, `08-sign-in-launch-task.md`, `09-export-for-ainho.md`.
+
+## Comments
+
+### 2026-11-25 — closed by the user
+
+Closed by the user. Seen on the work laptop: Node v22.22.1, and the sign-in task `tkitchen` is installed and running `tkitchen serve`. The other checks were not recorded here.
