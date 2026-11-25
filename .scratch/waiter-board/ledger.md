@@ -10,7 +10,7 @@ Verification profile: model+dst. Reason: membership changes (invite, remove) mus
 
 ## Decisions
 
-- D1 accepted (user, 2026-11-25): hosted on Cloudflare: a Worker plus one Durable Object per card; bots dial out over `wss://` (aiLau `cloud` extension pattern). Alternative: home aiLau behind the existing tunnel (down when the home PC is off).
+- D1 accepted (user, 2026-11-25): hosted on Cloudflare: a Worker plus one Durable Object per card; bots dial out over `wss://`. *2026-11-25, ticket 04:* aiLau's `cloud` extension is HTTPS snapshot backup with one shared token, not a `wss://` mailbox, so there is no prior art to reuse; ticket 02 designs the connection from scratch. Hosting itself is unaffected. Alternative: home aiLau behind the existing tunnel (down when the home PC is off).
 - D2 accepted (user, 2026-11-25): v1 users are people on personal projects, not work colleagues. Work data on personal infrastructure is out until cleared at work.
 - D3 accepted (user, 2026-11-25): any member may write `@waiter`; only the card owner's bot acts, on the owner's machine.
 - D4 accepted (user, 2026-11-25): v1 waiter reads the thread and replies only (observe mode). Real actions (tstack dispatch, PRs) come later.

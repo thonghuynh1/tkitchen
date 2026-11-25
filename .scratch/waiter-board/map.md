@@ -14,7 +14,7 @@ A hosted kanban board where each card is a Slack-style thread: people sign in wi
 
 ## Decisions so far
 
-- [D1 Hosting](ledger.md): Cloudflare Worker + one Durable Object per card; bots dial out over `wss://`.
+- [D1 Hosting](ledger.md): Cloudflare Worker + one Durable Object per card; bots dial out over `wss://` (designed fresh in ticket 02, no aiLau prior art).
 - [D2 Users](ledger.md): personal projects first, not work colleagues.
 - [D3 Who may ping](ledger.md): any member writes `@waiter`; only the owner's bot acts, on the owner's machine.
 - [D4 Waiter v1](ledger.md): reads the thread and replies only.
@@ -22,6 +22,7 @@ A hosted kanban board where each card is a Slack-style thread: people sign in wi
 - [D6 Repo](ledger.md): a new repo, separate from tkitchen; name open.
 - [D7 Sign-in](ledger.md): GitHub OAuth in the Worker; a person is `github:<numeric id>`.
 - [K-cost](ledger.md): Durable Objects run on the Workers Free plan (SQLite-backed only).
+- [How aiLau's cloud extension dials out](wayfinder/04-ailau-cloud-pattern.md): Current branch uses HTTPS snapshot backups, not a WebSocket mailbox; Worker internals are unverified.
 
 ## Slice outcomes
 
