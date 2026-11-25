@@ -1,4 +1,4 @@
-import { FileLock } from "../../src/modules/lock/adapters.ts";
+import { FileLock } from "../../adapters.ts";
 
 const home = process.argv[2];
 const lock = new FileLock(home);

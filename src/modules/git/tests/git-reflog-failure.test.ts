@@ -2,10 +2,10 @@ import { describe, it, expect } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { git } from "../helpers.ts";
-import { GitRepoImpl } from "../../src/modules/git/adapters.ts";
-import type { GitRunResult } from "../../src/modules/git/adapters.ts";
-import { PortError } from "../../src/modules/platform/index.ts";
+import { git } from "../../../../tests/helpers.ts";
+import { GitRepoImpl } from "../adapters.ts";
+import type { GitRunResult } from "../adapters.ts";
+import { PortError } from "../../platform/index.ts";
 
 const FATAL: GitRunResult = { stdout: "", stderr: "fatal: unable to read reflog: Permission denied", code: 128 };
 const ABSENT: GitRunResult = { stdout: "", stderr: "fatal: ambiguous argument 'refs/heads/nope': unknown revision or path not in the working tree.\nUse '--' to separate paths from revisions, like this:\n'git <command> [<revision>...] -- [<file>...]'", code: 128 };

@@ -3,9 +3,9 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { git, cli } from "../helpers.ts";
-import { createGitRunner, GitRepoImpl, GIT_TIMEOUT_MS } from "../../src/modules/git/adapters.ts";
-import { PortError } from "../../src/modules/platform/index.ts";
+import { git, cli } from "../../../../tests/helpers.ts";
+import { createGitRunner, GitRepoImpl, GIT_TIMEOUT_MS } from "../adapters.ts";
+import { PortError } from "../../platform/index.ts";
 
 const SLOW_TIMEOUT_MS = 200;
 const ONE_SECOND_MS = 1000;

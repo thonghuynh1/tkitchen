@@ -3,10 +3,10 @@ import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createGhRunner } from "../../src/modules/forge/adapters.ts";
-import { PortError } from "../../src/modules/platform/index.ts";
+import { createGhRunner } from "../adapters.ts";
+import { PortError } from "../../platform/index.ts";
 
-const FAKE_GH_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "fake-gh");
+const FAKE_GH_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "tests", "fixtures", "fake-gh");
 
 function alive(pid: number): boolean {
   try { process.kill(pid, 0); return true; } catch { return false; }

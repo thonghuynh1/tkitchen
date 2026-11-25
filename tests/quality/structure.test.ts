@@ -67,6 +67,9 @@ describe("env rule", () => {
       expect(errors[0]).toContain("use the Clock/Scheduler/Random/Ids port");
     }
   });
+  it("a module's own tests are not production code", () => {
+    expect(inspect({ "src/modules/lock/tests/x.test.ts": "import { a } from \"node:fs\";\nexport const t = Date.now();\nexport { a };\n" })).toHaveLength(0);
+  });
   it("new Date with arguments passes", () => {
     expect(inspect({ [LIB]: "export const t = new Date(0);\n" })).toHaveLength(0);
   });

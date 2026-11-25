@@ -8,7 +8,7 @@ vi.mock("node:fs/promises", async (importOriginal) => {
   return { ...actual, readdir: async () => { throw Object.assign(new Error("EACCES: permission denied, scandir"), { code: "EACCES" }); } };
 });
 
-const { FileLock } = await import("../../src/modules/lock/adapters.ts");
+const { FileLock } = await import("../adapters.ts");
 
 describe("FileLock sweep failure", () => {
   it("a failing sweep of recovery tickets does not undo a successful acquire", async () => {

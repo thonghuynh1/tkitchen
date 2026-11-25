@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { KitchenStore } from "../../src/modules/triggers/adapters.ts";
-import { baseMovedTrigger } from "../../src/modules/triggers/index.ts";
+import { KitchenStore } from "../adapters.ts";
+import { baseMovedTrigger } from "../index.ts";
 
 describe("sqlite store", () => {
   it("migrates once and dedupes triggers with monotonic seq", () => {

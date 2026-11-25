@@ -6,7 +6,7 @@ import { fork, spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import { dirname, join as pathJoin } from "node:path";
 import { fileURLToPath } from "node:url";
-import { FileLock } from "../../src/modules/lock/adapters.ts";
+import { FileLock } from "../adapters.ts";
 
 function makeHome(): string { return mkdtempSync(join(tmpdir(), "tk-lock-")); }
 
@@ -20,7 +20,7 @@ async function deadPid(): Promise<number> {
 interface Contender { child: ChildProcess; result: Promise<{ pid: number; result: string }>; exited: Promise<void>; }
 
 function startContender(home: string): Contender {
-  const script = pathJoin(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "lock-contender.mjs");
+  const script = pathJoin(dirname(fileURLToPath(import.meta.url)), "fixtures", "lock-contender.mjs");
   const child = spawn(process.execPath, [script, home], { stdio: ["pipe", "pipe", "pipe"] });
   let buffer = "";
   const result = new Promise<{ pid: number; result: string }>((resolve, reject) => {
@@ -40,7 +40,7 @@ function startContender(home: string): Contender {
 interface ScheduleWorker { child: ChildProcess; next: () => Promise<{ type: string; tag?: string; pid: number; result?: string }>; exited: Promise<void>; }
 
 function startScheduleWorker(home: string, mode: string): ScheduleWorker {
-  const script = pathJoin(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "lock-schedule-worker.mjs");
+  const script = pathJoin(dirname(fileURLToPath(import.meta.url)), "fixtures", "lock-schedule-worker.mjs");
   const child = fork(script, [home, mode], { execArgv: [], stdio: ["ignore", "ignore", "pipe", "ipc"] });
   const queue: { type: string; tag?: string; pid: number; result?: string }[] = [];
   const waiters: ((m: { type: string; tag?: string; pid: number; result?: string }) => void)[] = [];

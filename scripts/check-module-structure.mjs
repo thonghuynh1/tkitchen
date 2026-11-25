@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 export const MAX_MODULE_LINES = 800;
 
 const SOURCE_FILE = /\.ts$/;
+const MODULE_TESTS = /^src\/modules\/[^/]+\/tests\//;
 const ENV_PATTERNS = [
   { pattern: /Date\.now\(/g, label: "Date.now()" },
   { pattern: /new Date\(\s*\)/g, label: "new Date()" },
@@ -74,6 +75,7 @@ export function inspect(files) {
   const errors = [];
   for (const [rawPath, text] of Object.entries(files)) {
     const path = normalize(rawPath);
+    if (MODULE_TESTS.test(path)) continue;
     const lines = lineCount(text);
     if (lines > MAX_MODULE_LINES) {
       errors.push(path + ": " + lines + " lines exceeds the " + MAX_MODULE_LINES + "-line module budget");
@@ -97,7 +99,7 @@ function collect(root, base, files) {
 export function checkModuleStructure(root) {
   const files = {};
   collect(root, "src", files);
-  return { errors: inspect(files), count: Object.keys(files).length };
+  return { errors: inspect(files), count: Object.keys(files).filter((path) => !MODULE_TESTS.test(path)).length };
 }
 
 const directory = resolve(dirname(fileURLToPath(import.meta.url)), "..");

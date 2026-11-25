@@ -67,7 +67,7 @@ if (mode === "delayed-stale-read") {
 }
 syncBuiltinESMExports();
 
-const { FileLock } = await import("../../src/modules/lock/adapters.ts");
+const { FileLock } = await import("../../adapters.ts");
 const lock = new FileLock(home);
 const result = await lock.acquire();
 process.send({ type: "result", pid: process.pid, result });
