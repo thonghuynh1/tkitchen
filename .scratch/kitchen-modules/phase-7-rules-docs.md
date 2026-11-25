@@ -9,7 +9,7 @@ The generic rules borrowed as ideas (D9) are on, existing violations sit in the 
 ## Changes
 
 - `scripts/oxlint/` (beside the existing `no-comments.js`), each rule written from its one-line description:
-  - `glossary-terms`: identifiers may not use a word that `CONTEXT.md` lists under `_Avoid_`, such as `event` outside the store or `handler`.
+  - `context-terms`: identifiers may not use a word that a `CONTEXT.md` term lists under `_Avoid_`, such as `event` outside the store or `handler`.
   - `no-unsafe-as`: no `as` casts except `as const` and casts to a generic type parameter.
   - `no-pass-through`: no file whose only content is re-exports of one other file. Module `index.ts` files are exempt.
   - `branded-ids`: an exported type or parameter named `*Id` may not be a bare `string` or `number`.
