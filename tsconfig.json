@@ -13,7 +13,10 @@
     "types": [
       "node",
       "vitest/globals"
-    ]
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": [
     "modules/**/*.ts",

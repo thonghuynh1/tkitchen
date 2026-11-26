@@ -22,6 +22,10 @@
 
 - `Column = "todo" | "doing" | "done"`, in `modules/cards/index.ts` when ticket 01 creates that module; until then a local literal in `app.tsx`.
 
+## Progress
+
+Done 2026-11-26. Two deviations, both measured rather than assumed. The shadcn CLI (latest) could not resolve the `@/` alias in this repo shape and wrote the Card under a literal `@/` folder with a broken `cn` import; the file was moved to `src/components/ui/card.tsx`, its import pointed at `@/lib/utils`, and `utils.ts` plus the Tailwind v4 theme variables in `src/index.css` were written by hand in the shadcn shape, so `components.json` stays valid for future CLI adds. And the generated Card needed a far smaller lint override than planned: it passes every rule, the design rules included, except `typescript/no-unsafe-assignment` and `no-unsafe-call`, which fire only because the type-aware lint backend loads the Node tsconfig and reads `@/` imports as error-typed. The override turns off exactly those two rules for `src/components/ui/**` and `docs/lint-opt-outs.md` says when to remove it. A third rule joined the two planned seams rules: `web-reaches-modules-through-web-entry-only`, since dependency-cruiser cannot ask whether an `index.ts` transitively reaches Node, web code may reach a module only through `web.ts`.
+
 ## Verification
 
 Static: `npm run verify` exit 0, including `build:web`. A fixture import of `node:fs` from `src` fails `web-never-imports-node`.

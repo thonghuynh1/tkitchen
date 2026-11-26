@@ -56,6 +56,27 @@ module.exports = {
       to: { path: "^modules/[^/]+/lib/adapters/|^modules/[^/]+/adapters\\.ts$" },
     },
     {
+      name: "web-never-imports-node",
+      comment: "Browser code (src and any module web.ts) reaches no Node built-in.",
+      severity: "error",
+      from: { path: "^src/|^modules/[^/]+/web\\.ts$" },
+      to: { dependencyTypes: ["core"] },
+    },
+    {
+      name: "web-reaches-modules-through-web-entry-only",
+      comment: "Browser code reaches a module only through its web.ts, never its index.ts or adapters.ts.",
+      severity: "error",
+      from: { path: "^src/" },
+      to: { path: "^modules/", pathNot: "^modules/[^/]+/web\\.ts$" },
+    },
+    {
+      name: "radix-only-in-components-ui",
+      comment: "Only the generated shadcn components import Radix primitives.",
+      severity: "error",
+      from: { pathNot: "^src/components/ui/" },
+      to: { path: "(^|/)@radix-ui/" },
+    },
+    {
       name: "no-circular",
       severity: "error",
       from: {},
@@ -78,6 +99,7 @@ module.exports = {
     doNotFollow: { path: "node_modules" },
     exclude: { path: "^tests/quality/fixtures/" },
     tsPreCompilationDeps: true,
-    enhancedResolveOptions: { extensions: [".ts", ".mjs", ".js", ".cjs"] },
+    tsConfig: { fileName: "tsconfig.json" },
+    enhancedResolveOptions: { extensions: [".ts", ".tsx", ".mjs", ".js", ".cjs"] },
   },
 };

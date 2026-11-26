@@ -76,7 +76,7 @@ Board modules arrive later, from waiter-board tickets: `identities` (GitHub sign
 - `how` over each module before moving it; `architect` before phase 2 (the ports split crosses every boundary).
 - `typescript-best-practices` for every edit.
 - `tdd` for each lint rule: the fixture that fails first, then the rule.
-- `control-cli` with `.verification-skills/verify-tkitchen` for the CLI journeys; `control-ui` for the browser skeleton in phase 8.
+- `control-cli` with `.verification-skills/verify-tkitchen` for the CLI journeys; `control-ui` for the browser skeleton in phase 9.
 - `interrogate` on the module map before phase 1 starts.
 - `unslop` on every doc and commit message.
 
@@ -100,7 +100,7 @@ Project-level, after every phase:
 - The verify-tkitchen journeys (`.verification-skills/verify-tkitchen/SKILL.md`), run on the real CLI.
 - Phases 1 to 3 are moves. The sim line must read `violations=0` with the same seed count as the baseline.
 
-At plan completion: all of the above, plus the phase 8 and 9 browser check through `control-ui`.
+At plan completion: all of the above, plus the phase 9 and 10 browser check through `control-ui`.
 
 ## Implementation guidance
 

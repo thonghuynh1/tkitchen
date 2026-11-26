@@ -13,7 +13,7 @@ modules/<module>/
 └── tests/          the module's unit tests
 cli/tkitchen.ts     composition root: wires adapters to contracts
 index.ts            package entry: re-exports module entries only
-src/                the waiter board web app (phase 9)
+src/                the waiter board web app (Vite entry index.html at the root; src/main.tsx)
 tests/              cross-module suites: cli, sim, contract, quality, deploy
 ```
 
@@ -27,6 +27,7 @@ Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen ho
 - **No clock or randomness outside adapters.** Outside `lib/adapters/`, code does not call `Date.now()`, `new Date()` with no arguments, `setTimeout`, `setInterval`, `Math.random()` or `randomUUID()`; it uses the Clock, Scheduler, Random and Ids contracts from platform.
 - **800 lines per file** under `modules/` and `cli/`. Split an over-budget file along its seams.
 - **No cycles, no undeclared or unresolvable imports.**
+- **Browser code stays out of Node.** Files under `src/` and any module `web.ts` import no Node built-in. Web code reaches a module only through its `web.ts`, never its `index.ts` or `adapters.ts`. `@radix-ui/*` is imported only from `src/components/ui/` (the shadcn components).
 
 ## Checks
 
@@ -36,7 +37,8 @@ Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen ho
 |---|---|---|
 | Lint ratchet | `npm run lint` | oxlint over the repo; no file may gain violations of any rule beyond `lint-baseline.json` |
 | Lint config guard | `npm run lint:guard` | no loosening of the checks without the user's `Lint-approved-by:` trailer |
-| Types | `npm run typecheck` | `tsgo --noEmit` |
+| Types | `npm run typecheck` | `tsgo --noEmit` for the Node program and, with `tsconfig.web.json`, for `src/` |
+| Web build | `npm run build:web` | `vite build` into `dist/web` |
 | Seams | `npm run seams` | dependency-cruiser, `.dependency-cruiser.cjs`: the entries, pure lib, pure index, cycle and import rules, one named rule each |
 | Environment and size | `npm run verify:structure` | `scripts/check-module-structure.mjs`: the clock rule and the 800-line budget |
 | Tests | `npm test`, `npm run test:sim` | unit, contract, CLI and quality suites; the Round simulation |

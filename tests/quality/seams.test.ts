@@ -20,6 +20,8 @@ const CLEAN: Tree = {
   "modules/rounds/lib/round.ts": "import { createHash } from \"node:crypto\";\nimport type { GitRepo } from \"../../git/index.ts\";\nexport const run = (g: GitRepo): unknown => [g, createHash];\n",
   "modules/rounds/index.ts": "export { run } from \"./lib/round.ts\";\n",
   "cli/main.ts": "import { GitRepoImpl } from \"../modules/git/adapters.ts\";\nimport { run } from \"../modules/rounds/index.ts\";\nrun(new GitRepoImpl());\n",
+  "modules/git/web.ts": "export const label = \"git\";\n",
+  "src/app.ts": "import { label } from \"../modules/git/web.ts\";\nexport const view = label;\n",
 };
 
 async function violations(extra: Tree): Promise<Violation[]> {
@@ -29,7 +31,7 @@ async function violations(extra: Tree): Promise<Violation[]> {
       mkdirSync(join(root, dirname(path)), { recursive: true });
       writeFileSync(join(root, path), text);
     }
-    const result = await cruise(["modules", "cli"], { ...config.options, baseDir: root, validate: true, ruleSet: { forbidden: config.forbidden } } as never);
+    const result = await cruise(["modules", "cli", "src"], { ...config.options, baseDir: root, validate: true, ruleSet: { forbidden: config.forbidden } } as never);
     const output = result.output as { summary: { violations: Violation[] } };
     return output.summary.violations;
   } finally {
@@ -71,6 +73,18 @@ describe("module seams", () => {
       "modules/rounds/lib/a.ts": "import { b } from \"./b.ts\";\nexport const a = (): unknown => b;\n",
       "modules/rounds/lib/b.ts": "import { a } from \"./a.ts\";\nexport const b = (): unknown => a;\n",
     })).toContain("no-circular");
+  });
+  it("web code importing a Node built-in fails", async () => {
+    expect(await rulesHit({ "src/bad.ts": "export { readFileSync } from \"node:fs\";\n" })).toContain("web-never-imports-node");
+  });
+  it("web code reaching a module index fails", async () => {
+    expect(await rulesHit({ "src/bad.ts": "export { type GitRepo } from \"../modules/git/index.ts\";\n" })).toContain("web-reaches-modules-through-web-entry-only");
+  });
+  it("radix outside components/ui fails", async () => {
+    expect(await rulesHit({ "src/bad.ts": "export { Slot } from \"@radix-ui/react-slot\";\n" })).toContain("radix-only-in-components-ui");
+  });
+  it("radix inside components/ui passes the radix rule", async () => {
+    expect(await rulesHit({ "src/components/ui/x.ts": "export { Slot } from \"@radix-ui/react-slot\";\n" })).not.toContain("radix-only-in-components-ui");
   });
   it("an import that resolves nowhere fails", async () => {
     expect(await rulesHit({ "modules/rounds/lib/x.ts": "export { gone } from \"./gone.ts\";\n" })).toContain("no-unresolvable-imports");
