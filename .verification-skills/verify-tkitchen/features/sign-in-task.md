@@ -4,7 +4,7 @@ Spec: `.scratch/tkitchen-v1/issues/` Issue 08.
 
 ## Sub-features
 
-- `install-task.ps1 -Export` writes XML with one LogonTrigger, `node.exe ... tkitchen.ts serve`, `IgnoreNew`, and registers nothing
+- `install-task.ps1 -Export` writes XML with one LogonTrigger, `node.exe ... main.ts serve`, `IgnoreNew`, and registers nothing
 - `uninstall-task.ps1` succeeds when no task exists
 
 ## How to get to it (user POV)

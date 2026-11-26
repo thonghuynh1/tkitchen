@@ -49,7 +49,7 @@ function startServe(f: Fixture): Running {
     PATH: FAKE_GH_DIR + delimiter + (process.env["PATH"] ?? ""),
   };
   env["FAKE_GH_PRS_FILE"] = join(FAKE_GH_DIR, "prs.json");
-  const child = spawn(process.execPath, ["cli/tkitchen.ts", "serve"], {
+  const child = spawn(process.execPath, ["modules/cli/lib/adapters/main.ts", "serve"], {
     cwd: process.cwd(),
     env,
     stdio: ["ignore", "pipe", "pipe"],

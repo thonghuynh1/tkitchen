@@ -12,9 +12,6 @@
   "scripts/oxlint/design-rules.js": {
     "design/context-terms": 1
   },
-  "cli/tkitchen.ts": {
-    "design/context-terms": 5
-  },
   "modules/branches/lib/base.ts": {
     "design/context-terms": 4
   },

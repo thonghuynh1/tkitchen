@@ -11,21 +11,22 @@ modules/<module>/
 ├── lib/            pure internals; lib/contract.ts holds the module's contracts
 ├── lib/adapters/   the only internals that touch node:*, the file system, processes or the clock
 └── tests/          the module's unit tests
-cli/tkitchen.ts     composition root: wires adapters to contracts
+modules/cli/        the composition root as a module: lib/parse.ts reads the words,
+                    lib/adapters/run.ts wires adapters to contracts, lib/adapters/main.ts runs it
 index.ts            package entry: re-exports module entries only
 src/                the waiter board web app (Vite entry index.html at the root; src/main.tsx)
 tests/              cross-module suites: cli, sim, contract, quality, deploy
 ```
 
-Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen home), triggers (Trigger, Thread, Disposition, the kitchen store), branches (watched branches, Base resolution), notices, rounds (Round, serve loop), export, git, forge, config, lock, board-http (the board's HTTP server on `node:http`: the built page plus `/v1/health`).
+Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen home), triggers (Trigger, Thread, Disposition, the kitchen store), branches (watched branches, Base resolution), notices, rounds (Round, serve loop), export, git, forge, config, lock, board-http (the board's HTTP server on `node:http`: the built page plus `/v1/health`), cli (the words on the command line and the wiring that runs them).
 
 ## Rules
 
 - **Entries only.** Code outside a module reaches it through `index.ts` or `adapters.ts`, never through `lib/` or `tests/`. A module's own tests use its entries too.
-- **Pure lib.** A module's `lib/` outside `lib/adapters/` imports no Node built-in except `node:crypto` (deterministic hashing), and never imports `lib/adapters/`, any `adapters.ts` or `cli/`. It reaches the outside world through contracts that the CLI fills with adapters. This keeps the logic runnable in the sim.
+- **Pure lib.** A module's `lib/` outside `lib/adapters/` imports no Node built-in except `node:crypto` (deterministic hashing), and never imports `lib/adapters/` or any `adapters.ts`. It reaches the outside world through contracts that the cli module fills with adapters. This keeps the logic runnable in the sim.
 - **Pure index.** `index.ts` exports nothing from `lib/adapters/`. Node code goes behind `adapters.ts`, so importing a module's contracts never loads `node:sqlite` or a child process.
 - **No clock or randomness outside adapters.** Outside `lib/adapters/`, code does not call `Date.now()`, `new Date()` with no arguments, `setTimeout`, `setInterval`, `Math.random()` or `randomUUID()`; it uses the Clock, Scheduler, Random and Ids contracts from platform.
-- **800 lines per file** under `modules/` and `cli/`. Split an over-budget file along its seams.
+- **800 lines per file** under `modules/`. Split an over-budget file along its seams.
 - **No cycles, no undeclared or unresolvable imports.**
 - **Browser code stays out of Node.** Files under `src/` and any module `web.ts` import no Node built-in. Web code reaches a module only through its `web.ts`, never its `index.ts` or `adapters.ts`. `@radix-ui/*` is imported only from `src/components/ui/` (the shadcn components).
 
@@ -67,7 +68,7 @@ All four apply to every file, tests included. Their violations on 2026-11-26 sit
 
 ## Adding a module
 
-Create `modules/<name>/` with `lib/contract.ts`, `lib/`, `index.ts`, and `adapters.ts` plus `lib/adapters/` if it needs Node. Export it from the root `index.ts`. Wire its adapters in `cli/tkitchen.ts`. Put its unit tests in its own `tests/`. Add a term to `CONTEXT.md` when it names a new concept.
+Create `modules/<name>/` with `lib/contract.ts`, `lib/`, `index.ts`, and `adapters.ts` plus `lib/adapters/` if it needs Node. Export it from the root `index.ts`. Wire its adapters in `modules/cli/lib/adapters/run.ts`. Put its unit tests in its own `tests/`. Add a term to `CONTEXT.md` when it names a new concept.
 
 ## Lint backend
 

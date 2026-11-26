@@ -15,5 +15,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["modules/**/*.ts", "cli/**/*.ts", "index.ts", "tests/**/*.ts"]
+  "include": ["modules/**/*.ts", "index.ts", "tests/**/*.ts"]
 }

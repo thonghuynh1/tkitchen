@@ -29,8 +29,11 @@ const CLEAN: Tree = {
   "modules/rounds/lib/round.ts":
     'import { createHash } from "node:crypto";\nimport type { GitRepo } from "../../git/index.ts";\nexport const run = (g: GitRepo): unknown => [g, createHash];\n',
   "modules/rounds/index.ts": 'export { run } from "./lib/round.ts";\n',
-  "cli/main.ts":
-    'import { GitRepoImpl } from "../modules/git/adapters.ts";\nimport { run } from "../modules/rounds/index.ts";\nrun(new GitRepoImpl());\n',
+  "index.ts":
+    'import { GitRepoImpl } from "./modules/git/adapters.ts";\nimport { run } from "./modules/rounds/index.ts";\nrun(new GitRepoImpl());\n',
+  "modules/cli/lib/parse.ts": 'export const word = "serve";\n',
+  "modules/cli/lib/adapters/main.ts":
+    'import { GitRepoImpl } from "../../../git/adapters.ts";\nimport { run } from "../../../rounds/index.ts";\nimport { word } from "../parse.ts";\nexport const main = (): unknown => [run(new GitRepoImpl()), word];\n',
   "modules/git/web.ts": 'export const label = "git";\n',
   "src/app.ts": 'import { label } from "../modules/git/web.ts";\nexport const view = label;\n',
 };
@@ -42,7 +45,7 @@ async function violations(extra: Tree): Promise<Violation[]> {
       mkdirSync(join(root, dirname(path)), { recursive: true });
       writeFileSync(join(root, path), text);
     }
-    const result = await cruise(["modules", "cli", "src"], {
+    const result = await cruise(["modules", "index.ts", "src"], {
       ...config.options,
       baseDir: root,
       validate: true,
@@ -68,9 +71,9 @@ describe("module seams", () => {
       await rulesHit({ "modules/rounds/lib/x.ts": 'export { type GitRepo } from "../../git/lib/contract.ts";\n' }),
     ).toContain("entry-points-only-across-modules");
   });
-  it("the CLI importing a module's lib fails", async () => {
+  it("the package entry importing a module's lib fails", async () => {
     expect(
-      await rulesHit({ "cli/x.ts": 'export { GitRepoImpl } from "../modules/git/lib/adapters/git-repo.ts";\n' }),
+      await rulesHit({ "index.ts": 'export { GitRepoImpl } from "./modules/git/lib/adapters/git-repo.ts";\n' }),
     ).toContain("entry-points-only-from-outside");
   });
   it("a module's tests importing its own lib fail", async () => {

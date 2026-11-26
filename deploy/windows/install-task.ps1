@@ -9,7 +9,7 @@ $ErrorActionPreference = 'Stop'
 $repo = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $user = "$env:USERDOMAIN\$env:USERNAME"
 $node = (Get-Command node).Source
-$script = Join-Path $repo 'cli\tkitchen.ts'
+$script = Join-Path $repo 'modules\cli\lib\adapters\main.ts'
 $arguments = '"' + $script + '" serve'
 
 function Escape-Xml([string]$value) {

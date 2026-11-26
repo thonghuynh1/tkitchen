@@ -16,3 +16,6 @@ export { getHistory, getNotices } from "./modules/notices/index.ts";
 export { runRoundForRepo, runRounds } from "./modules/rounds/index.ts";
 export type { BoardServer, BoardServerOptions } from "./modules/board-http/index.ts";
 export { startBoardServer } from "./modules/board-http/adapters.ts";
+export { parseCommand, USAGE } from "./modules/cli/index.ts";
+export type { Command, ParsedCommand } from "./modules/cli/index.ts";
+export { runCli } from "./modules/cli/adapters.ts";
