@@ -40,6 +40,25 @@ export type {
   Viewer,
 } from "./modules/identities/index.ts";
 export { LiveGitHubOAuth, SqliteIdentityStore } from "./modules/identities/adapters.ts";
+export { CARD_COLUMNS, CardService, isCardColumn, isCardId, isInviteToken } from "./modules/cards/index.ts";
+export type {
+  ArchiveCardOutcome,
+  Card,
+  CardColumn,
+  CardId,
+  CardInvite,
+  CardServiceDeps,
+  CardStore,
+  CardSummary,
+  CloseSharingOutcome,
+  CreateCardOutcome,
+  CreateInviteOutcome,
+  InviteToken,
+  MoveCardOutcome,
+  RedeemInviteOutcome,
+  RemoveMemberOutcome,
+} from "./modules/cards/index.ts";
+export { SqliteCardStore } from "./modules/cards/adapters.ts";
 export { parseCommand, USAGE } from "./modules/cli/index.ts";
 export type { Command, ParsedCommand } from "./modules/cli/index.ts";
 export { runCli } from "./modules/cli/adapters.ts";
