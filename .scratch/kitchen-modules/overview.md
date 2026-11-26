@@ -93,6 +93,8 @@ Board modules arrive later, from waiter-board tickets: `identities` (GitHub sign
 9. [Web skeleton with shadcn](phase-9-web.md)
 10. [Board verb and health route](phase-10-board-verb.md)
 
+All ten phases are done (2026-11-26; last commit `8d0f98a`). The kitchen lives in vertical modules under `modules/`, the web app in `src/`, and `tkitchen board` serves the page with `/v1/health`. The waiter board grows from here: tickets 01 to 03 in [the waiter-board map](../waiter-board/map.md) add modules beside `board-http`. Two pre-existing defects were left as their own units along the way, both proven present before the restructure: the `serve-and-lock` journey's stderr filter (Node's SQLite `ExperimentalWarning` is not stripped) and two load-sensitive tests with fixed waits (`gh-timeout`, the lock delayed-takeover schedule), which fail only in a loaded full run and pass alone.
+
 ## Verification
 
 Project-level, after every phase:
