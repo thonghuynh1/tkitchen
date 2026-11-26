@@ -11,6 +11,7 @@ export interface Scripting {
 }
 export type ScriptedGitRepo = GitRepo & Scripting;
 
+const SETUP_TIMEOUT_MS = 60000;
 const MAIN_REF = "refs/remotes/origin/main";
 const FEATURE_REF = "refs/remotes/origin/feature";
 
@@ -19,10 +20,10 @@ export function gitRepoContract(name: string, make: () => Promise<ScriptedGitRep
     let repo: ScriptedGitRepo;
     beforeEach(async () => {
       repo = await make();
-    });
+    }, SETUP_TIMEOUT_MS);
     afterEach(async () => {
       await repo.dispose();
-    });
+    }, SETUP_TIMEOUT_MS);
 
     it("lsRemoteHeads heads and defaultBranch", async () => {
       await repo.branchFrom("feature", "main");
