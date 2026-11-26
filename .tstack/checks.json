@@ -6,12 +6,12 @@
     { "name": "typecheck", "run": "npm run typecheck" },
     { "name": "seams", "run": "npm run seams" },
     { "name": "structure", "run": "npm run verify:structure" },
+    { "name": "test", "run": "npm test --" },
     { "name": "test-sim", "run": "npm run test:sim" },
     { "name": "build-web", "run": "npm run build:web" }
   ],
   "tests": {
     "required": true,
-    "runners": ["npm test --", "node node_modules/vitest/vitest.mjs run"],
-    "notRequiredWhenOnly": ["**/*.md", ".scratch/**", "docs/**"]
+    "runners": ["npm test --"]
   }
 }
