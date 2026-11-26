@@ -11,3 +11,4 @@ Each feature has one journey under `../scripts/journeys/`. Run it from the repo 
 | [Serve loop and single-instance lock](serve-and-lock.md) | Issue 07 | `serve-and-lock.sh` |
 | [Export for aiNho (tkitchen.export/1)](export.md) | Issue 09 | `export.sh` |
 | [Windows sign-in task scripts](sign-in-task.md) | Issue 08 | `sign-in-task.sh` |
+| [Board page and health route](board.md) | kitchen-modules phase 10 | `board.sh` |

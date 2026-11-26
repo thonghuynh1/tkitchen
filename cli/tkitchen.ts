@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { FileConfig, ConfigError } from "../modules/config/adapters.ts";
 import { KitchenStore } from "../modules/triggers/adapters.ts";
@@ -10,6 +11,7 @@ import { ForgeByKind } from "../modules/forge/adapters.ts";
 import { getNotices, formatNotices, getHistory, formatHistory } from "../modules/notices/index.ts";
 import { exportLines, serializeExportLines, InvalidCursorError } from "../modules/export/index.ts";
 import { ReadOnlyExportStore } from "../modules/export/adapters.ts";
+import { startBoardServer } from "../modules/board-http/adapters.ts";
 
 const USAGE = [
   "Usage: tkitchen <command> [options]",
@@ -19,11 +21,15 @@ const USAGE = [
   "  round [--repo <name>]   run one Round for one or all repos",
   "  notices [--json] [--history]   show open Notices, or Trigger history with --history",
   "  export --json [--after <cursor>]   export Triggers for aiNho as NDJSON",
+  "  board [--port <n>] [--host <addr>]   serve the waiter board page",
   "  --help             show this help",
 ].join("\n");
 
 const EXIT_USAGE = 2;
 const ARGV_COMMAND_INDEX = 2;
+const DEFAULT_BOARD_PORT = 3000;
+const DEFAULT_BOARD_HOST = "127.0.0.1";
+const MAX_PORT = 65535;
 function storePath(): string { return join(kitchenHome(), "kitchen.db"); }
 function gitTimeoutMs(): number {
   const raw = process.env["TKITCHEN_GIT_TIMEOUT_MS"];
@@ -66,6 +72,39 @@ async function runServe(argv: string[]): Promise<number> {
     process.off("SIGTERM", onSignal);
     store.close();
   }
+}
+
+async function runBoard(argv: string[]): Promise<number> {
+  let port = DEFAULT_BOARD_PORT;
+  let host = DEFAULT_BOARD_HOST;
+  for (let i = 1; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--port") {
+      const value = argv[i + 1];
+      const parsed = value === undefined ? Number.NaN : Number.parseInt(value, 10);
+      if (!Number.isInteger(parsed) || parsed < 0 || parsed > MAX_PORT) { console.error("--port needs a number from 0 to " + String(MAX_PORT)); return EXIT_USAGE; }
+      port = parsed; i++;
+    } else if (arg === "--host") {
+      const value = argv[i + 1];
+      if (value === undefined) { console.error("--host needs an address"); return EXIT_USAGE; }
+      host = value; i++;
+    } else { console.error("unknown argument: " + arg); return EXIT_USAGE; }
+  }
+  const webRoot = join(import.meta.dirname, "..", "dist", "web");
+  if (!existsSync(join(webRoot, "index.html"))) { console.error("board page not built: run npm run build:web first"); return 1; }
+  const board = await startBoardServer({ port, host, webRoot });
+  console.log("board at " + board.url);
+  await new Promise<void>((resolveStop) => {
+    const onSignal = (): void => {
+      process.off("SIGINT", onSignal);
+      process.off("SIGTERM", onSignal);
+      resolveStop();
+    };
+    process.on("SIGINT", onSignal);
+    process.on("SIGTERM", onSignal);
+  });
+  await board.close();
+  return 0;
 }
 
 async function runRoundCommand(argv: string[]): Promise<number> {
@@ -127,6 +166,7 @@ async function main(argv: string[]): Promise<number> {
   const cmd = argv[0];
   if (cmd === undefined || cmd === "--help" || cmd === "-h" || cmd === "help") { console.log(USAGE); return 0; }
   if (cmd === "export") return runExport(argv);
+  if (cmd === "board") return runBoard(argv);
   if (cmd === "serve") return runServe(argv);
   if (cmd === "round") return runRoundCommand(argv);
   if (cmd === "notices") {

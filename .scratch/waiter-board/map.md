@@ -7,7 +7,7 @@ A local-hosted kanban board, run on whichever machine hosts it and exposed at a 
 ## Notes
 
 - Grill ledger: [ledger.md](ledger.md) (decisions D1–D7); evidence: [grounding.md](grounding.md). Verification profile: model+dst.
-- Built inside tkitchen (D11). The restructure that comes first: [kitchen-modules plan](../kitchen-modules/overview.md). Board features land as modules on its skeleton (phase 9).
+- Built inside tkitchen (D11). The restructure that comes first: [kitchen-modules plan](../kitchen-modules/overview.md). Its skeleton is live (phases 1 to 10, 2026-11-26): the web app in `src/`, `tkitchen board` serving it with `/v1/health` through `modules/board-http/`. Tickets 01 to 03 now grow modules (`identities`, `cards`, `chat`, `live`, `waiter`) beside `board-http`, and web screens reach each module only through its `web.ts`.
 - Answers tkitchen K1 (the workspace). Words follow tkitchen `CONTEXT.md`: a ping is a **Trigger**, a card is a **Thread** of the new kind `board:<card>`.
 - Skills: `/trek` walks this map one ticket, one slice; `grill-with-docs` + `domain-modeling` for grilling tickets.
 - Durable Pi plan: `my-home/.scratch/durable-pi/plan.md`.

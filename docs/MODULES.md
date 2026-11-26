@@ -17,7 +17,7 @@ src/                the waiter board web app (Vite entry index.html at the root;
 tests/              cross-module suites: cli, sim, contract, quality, deploy
 ```
 
-Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen home), triggers (Trigger, Thread, Disposition, the kitchen store), branches (watched branches, Base resolution), notices, rounds (Round, serve loop), export, git, forge, config, lock.
+Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen home), triggers (Trigger, Thread, Disposition, the kitchen store), branches (watched branches, Base resolution), notices, rounds (Round, serve loop), export, git, forge, config, lock, board-http (the board's HTTP server on `node:http`: the built page plus `/v1/health`).
 
 ## Rules
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync, spawn, spawnSync } from "node:child_process";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, openSync, readFileSync, writeFileSync } from "node:fs";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -110,6 +110,16 @@ const commands = {
     log(p, "$ serve-start pid=" + child.pid + " (output discarded; see " + out + " not written)");
     console.log(child.pid);
   },
+  "board-start"(run) {
+    const p = paths(run);
+    const out = openSync(join(p.root, "board.log"), "a");
+    const child = spawn(process.execPath, [CLI, "board", "--port", "0"], { cwd: REPO, env: env(p), detached: true, stdio: ["ignore", out, out] });
+    child.unref();
+    const st = existsSync(p.state) ? JSON.parse(readFileSync(p.state, "utf8")) : {};
+    st.boardPids = [...(st.boardPids ?? []), child.pid]; writeFileSync(p.state, JSON.stringify(st));
+    log(p, "$ board-start pid=" + child.pid + " (output in board.log)");
+    console.log(child.pid);
+  },
   sql(run, query) {
     const p = paths(run);
     const r = spawnSync(process.execPath, ["-e", "const{DatabaseSync}=require('node:sqlite');const d=new DatabaseSync(process.argv[1],{readOnly:true});console.log(JSON.stringify(d.prepare(process.argv[2]).all(),null,1))", join(p.home, "kitchen.db"), query], { encoding: "utf8" });
@@ -136,7 +146,8 @@ const commands = {
     const p = paths(run);
     const st = existsSync(p.state) ? JSON.parse(readFileSync(p.state, "utf8")) : {};
     for (const pid of st.servePids ?? []) { try { process.kill(pid); log(p, "$ cleanup killed serve pid " + pid); } catch { log(p, "$ cleanup serve pid " + pid + " already gone"); } }
-    st.servePids = []; writeFileSync(p.state, JSON.stringify(st));
+    for (const pid of st.boardPids ?? []) { try { process.kill(pid); log(p, "$ cleanup killed board pid " + pid); } catch { log(p, "$ cleanup board pid " + pid + " already gone"); } }
+    st.servePids = []; st.boardPids = []; writeFileSync(p.state, JSON.stringify(st));
     console.log("cleaned " + p.root + " (transcript kept: " + p.log + ")");
   },
 };

@@ -14,3 +14,5 @@ export { PortError } from "./modules/platform/index.ts";
 export type { Clock, Ids, Random, Scheduler } from "./modules/platform/index.ts";
 export { getHistory, getNotices } from "./modules/notices/index.ts";
 export { runRoundForRepo, runRounds } from "./modules/rounds/index.ts";
+export type { BoardServer, BoardServerOptions } from "./modules/board-http/index.ts";
+export { startBoardServer } from "./modules/board-http/adapters.ts";

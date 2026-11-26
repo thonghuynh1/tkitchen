@@ -1,6 +1,6 @@
 ---
 name: verify-tkitchen
-description: Drive the tkitchen CLI (round, notices, notices --history, serve, export, and the Windows sign-in task scripts) against real git repos in an isolated temp world with a fake gh, and capture transcripts as proof. Use to verify any tkitchen change that a user could observe from the command line.
+description: Drive the tkitchen CLI (round, notices, notices --history, serve, export, board, and the Windows sign-in task scripts) against real git repos in an isolated temp world with a fake gh, and capture transcripts as proof. Use to verify any tkitchen change that a user could observe from the command line.
 ---
 
 # Verify tkitchen
@@ -41,9 +41,10 @@ Helper verbs (all take the run dir `$R` first):
 | `set-url $R <url\|ORIGIN>` | break or restore dev's origin URL |
 | `kt $R [ENV=V ...] -- <args>` | run the real `tkitchen <args>` in the world. Example: `kt $R FAKE_GH_FAIL=1 -- round` makes gh fail |
 | `serve-start $R [roundMinutes]` | start `tkitchen serve` detached; prints its pid |
+| `board-start $R` | start `tkitchen board --port 0` detached, output in `board.log`; prints its pid |
 | `sql $R '<select>'` | read-only query on `home/kitchen.db` |
 | `refs $R` | all refs of the bare origin |
-| `cleanup $R` | kill only the serve processes this run started |
+| `cleanup $R` | kill only the serve and board processes this run started |
 
 Ready-made journeys, one per feature, run every check and print `PASS`/`FAIL` lines plus a summary:
 
@@ -51,7 +52,7 @@ Ready-made journeys, one per feature, run every check and print `PASS`/`FAIL` li
 bash .verification-skills/verify-tkitchen/scripts/journeys/<feature>.sh
 ```
 
-The journeys are `round-and-notices`, `automatic-base`, `pr-base`, `git-failure`, `serve-and-lock`, `export`, and `sign-in-task` (Windows only). Set `VT_STAMP` to share one timestamp across a batch. See `features/README.md`.
+The journeys are `round-and-notices`, `automatic-base`, `pr-base`, `git-failure`, `serve-and-lock`, `export`, `board`, and `sign-in-task` (Windows only). Set `VT_STAMP` to share one timestamp across a batch. See `features/README.md`.
 
 ## Evidence
 
@@ -66,7 +67,7 @@ Evidence lives under `.verification-evidence/verify-tkitchen/`, which is gitigno
 
 ## Cleanup
 
-`node $VT cleanup $R` kills the serve pids recorded in `$R/state.json` and nothing else. Never kill `node` by name: the user's own kitchen may be running. Cleanup keeps the run dir and its evidence. Delete old run dirs by hand when they are no longer cited.
+`node $VT cleanup $R` kills the serve and board pids recorded in `$R/state.json` and nothing else. Never kill `node` by name: the user's own kitchen may be running. Cleanup keeps the run dir and its evidence. Delete old run dirs by hand when they are no longer cited.
 
 ## Risks
 

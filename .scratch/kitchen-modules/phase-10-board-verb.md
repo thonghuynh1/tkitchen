@@ -19,6 +19,10 @@
 - `BoardServer = { url: string; close(): Promise<void> }`.
 - `BoardServerOptions = { port: number; host: string; webRoot: string }`.
 
+## Progress
+
+Done 2026-11-26. One deviation from the line above: `startBoardServer` is exported from `adapters.ts`, not `index.ts`, because `index.ts` stays pure in every module and the server is the Node side. `index.ts` exports the two types; the CLI imports the function from `adapters.ts`, as it does for every other Node entry. Static serving refuses paths outside the web root and answers an extensionless unknown path with the page, so client routes land on the board. Runtime proof: the `board` journey 6/6 plus a browser session on the board port reading the three column headings. One claim stayed a hand check: on Windows a spawned `SIGINT` does not reach a piped child's listener (the process dies by the signal, which still frees the port), so that console Ctrl-C ends the verb with exit 0 rests on the same listener shape `serve` uses, not on an observed exit code.
+
 ## Verification
 
 Static: `npm run verify` exit 0.
