@@ -31,6 +31,7 @@ export interface BoardInvariantContext {
   archivedHasActiveInvite: boolean;
   archivedHasNonOwnerMember: boolean;
   archivedHasOpenStream: boolean;
+  prg001CatchUpReachable: boolean;
 }
 
 export function checkBoardInvariants(ctx: BoardInvariantContext, stepIndex: number, action: string): BoardViolation[] {
@@ -124,6 +125,19 @@ export function checkBoardInvariants(ctx: BoardInvariantContext, stepIndex: numb
         String(ctx.archivedHasNonOwnerMember) +
         " archivedHasOpenStream=" +
         String(ctx.archivedHasOpenStream),
+    });
+  }
+
+  if (isPrg001Pending(state) && !ctx.prg001CatchUpReachable) {
+    violations.push({
+      invariantId: "PRG-001",
+      stepIndex,
+      action,
+      detail:
+        "catch-up unreachable while pending: aliceSeenSeq=" +
+        String(state.aliceSeenSeq) +
+        " msgSeq=" +
+        String(state.msgSeq),
     });
   }
 

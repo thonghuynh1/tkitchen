@@ -40,7 +40,8 @@ describe("board DST", () => {
       expect(batch.coverage.removeVsPost).toBeGreaterThan(0);
       expect(batch.coverage.closeSharingVsStaleRedeem).toBeGreaterThan(0);
       expect(batch.coverage.archiveWithMultipleStreams).toBeGreaterThan(0);
-      expect(batch.coverage.serverRestart).toBeGreaterThan(0);
+      expect(batch.coverage.serverRestartCatchUp).toBeGreaterThan(0);
+      expect(batch.coverage.serverRestartRevokedInvite).toBeGreaterThan(0);
     }
   });
 

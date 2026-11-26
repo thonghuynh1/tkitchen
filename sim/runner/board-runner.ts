@@ -45,7 +45,8 @@ export interface FaultCoverage {
   removeVsPost: number;
   closeSharingVsStaleRedeem: number;
   archiveWithMultipleStreams: number;
-  serverRestart: number;
+  serverRestartCatchUp: number;
+  serverRestartRevokedInvite: number;
 }
 
 export interface BoardSeedRun {
@@ -75,7 +76,8 @@ function emptyCoverage(): FaultCoverage {
     removeVsPost: 0,
     closeSharingVsStaleRedeem: 0,
     archiveWithMultipleStreams: 0,
-    serverRestart: 0,
+    serverRestartCatchUp: 0,
+    serverRestartRevokedInvite: 0,
   };
 }
 
@@ -85,7 +87,8 @@ function addCoverage(acc: FaultCoverage, next: FaultCoverage): void {
   acc.removeVsPost += next.removeVsPost;
   acc.closeSharingVsStaleRedeem += next.closeSharingVsStaleRedeem;
   acc.archiveWithMultipleStreams += next.archiveWithMultipleStreams;
-  acc.serverRestart += next.serverRestart;
+  acc.serverRestartCatchUp += next.serverRestartCatchUp;
+  acc.serverRestartRevokedInvite += next.serverRestartRevokedInvite;
 }
 
 async function signInActor(identity: IdentityService, code: string): Promise<Viewer> {
@@ -265,7 +268,8 @@ export async function runBoardSeed(seed: number): Promise<BoardSeedRun> {
 
   let aliceDroppedRecently = false;
   let closeSharingExecuted = false;
-  let serverRestarted = false;
+  let restartPendingCatchUp = false;
+  let restartPendingRevokedCheck = false;
 
   const coverage = emptyCoverage();
   const violations: BoardViolation[] = [];
@@ -324,6 +328,19 @@ export async function runBoardSeed(seed: number): Promise<BoardSeedRun> {
     };
   }
 
+  function probePrg001CatchUp(state: BoardModelState): boolean {
+    if (!isPrg001Pending(state)) return true;
+    if (cardId === null) return false;
+    const outcome = chatService.listEntries(alice, { cardId, afterSeq: state.aliceSeenSeq });
+    if (!outcome.ok) return false;
+    const expectedCount = state.msgSeq - state.aliceSeenSeq;
+    if (outcome.entries.length !== expectedCount) return false;
+    for (let i = 0; i < expectedCount; i += 1) {
+      if (outcome.entries[i]?.seq !== state.aliceSeenSeq + i + 1) return false;
+    }
+    return true;
+  }
+
   function buildContext(state: BoardModelState): BoardInvariantContext {
     let archivedHasActiveInvite = false;
     let archivedHasNonOwnerMember = false;
@@ -340,6 +357,7 @@ export async function runBoardSeed(seed: number): Promise<BoardSeedRun> {
       archivedHasActiveInvite,
       archivedHasNonOwnerMember,
       archivedHasOpenStream,
+      prg001CatchUpReachable: probePrg001CatchUp(state),
     };
   }
 
@@ -411,13 +429,18 @@ export async function runBoardSeed(seed: number): Promise<BoardSeedRun> {
     const before = projectState();
     if (before.charlieStream) return false;
     const aliceHadStream = before.aliceStream;
+    const hadRevokedToken = cardId !== null && !before.inviteActive && !before.aliceMember && aliceToken !== null;
     liveHub.closeAll();
     liveHub = new InMemoryLiveHub();
     aliceClient = null;
     charlieClient = null;
-    serverRestarted = true;
-    if (aliceHadStream) aliceDroppedRecently = true;
-    coverage.serverRestart += 1;
+    if (aliceHadStream) {
+      aliceDroppedRecently = true;
+      restartPendingCatchUp = true;
+    }
+    if (hadRevokedToken) {
+      restartPendingRevokedCheck = true;
+    }
     const after = verifyInvariants(stepIndex, "serverRestartFault");
     if (aliceHadStream) {
       trace.push({ action: "aliceDropStream", state: after });
@@ -449,6 +472,7 @@ export async function runBoardSeed(seed: number): Promise<BoardSeedRun> {
         if (active === null) throw new Error("active invite missing");
         aliceToken = active.token;
         aliceLinkVersion = inviteVersion;
+        restartPendingRevokedCheck = false;
         return;
       }
       case "aliceRedeemLink": {
@@ -462,7 +486,10 @@ export async function runBoardSeed(seed: number): Promise<BoardSeedRun> {
           return;
         }
         if (closeSharingExecuted) coverage.closeSharingVsStaleRedeem += 1;
-        if (serverRestarted) coverage.serverRestart += 1;
+        if (restartPendingRevokedCheck) {
+          coverage.serverRestartRevokedInvite += 1;
+          restartPendingRevokedCheck = false;
+        }
         return;
       }
       case "charlieJoinViaActiveLink": {
@@ -538,7 +565,10 @@ export async function runBoardSeed(seed: number): Promise<BoardSeedRun> {
             coverage.sseDropCatchUp += 1;
             aliceDroppedRecently = false;
           }
-          if (serverRestarted) coverage.serverRestart += 1;
+          if (restartPendingCatchUp) {
+            coverage.serverRestartCatchUp += 1;
+            restartPendingCatchUp = false;
+          }
           return;
         }
         if (aliceRemovedAtSeq > 0 || aliceKickedAt > 0) {
@@ -555,6 +585,7 @@ export async function runBoardSeed(seed: number): Promise<BoardSeedRun> {
         if (aliceClient !== null && !aliceClient.open) aliceClient = null;
         aliceKickedAt = inviteVersion;
         aliceRemovedAtSeq = seqBefore;
+        restartPendingCatchUp = false;
         return;
       }
       case "ownerCloseSharing": {
@@ -570,6 +601,7 @@ export async function runBoardSeed(seed: number): Promise<BoardSeedRun> {
         if (aliceWasMember) {
           aliceKickedAt = inviteVersion;
           aliceRemovedAtSeq = seqBefore;
+          restartPendingCatchUp = false;
         }
         return;
       }
@@ -588,6 +620,7 @@ export async function runBoardSeed(seed: number): Promise<BoardSeedRun> {
         if (aliceWasMember) {
           aliceKickedAt = inviteVersion;
           aliceRemovedAtSeq = seqBefore;
+          restartPendingCatchUp = false;
         }
         return;
       }
@@ -612,17 +645,24 @@ export async function runBoardSeed(seed: number): Promise<BoardSeedRun> {
       break;
     }
 
+    const profileWantsRestart =
+      profile === 5 &&
+      current.cardState === "active" &&
+      !current.charlieStream &&
+      ((current.aliceStream && !restartPendingCatchUp) ||
+        (!current.inviteActive && !current.aliceMember && aliceToken !== null && !restartPendingRevokedCheck));
+
     const roll = rng.nextInt(12);
-    if (roll === 0) {
-      runNonOwnerCreateCardProbe(stepIndex);
-    } else if (roll === 1) {
-      runDuplicateRedeemProbe(stepIndex);
-    } else if (roll === 2 && current.cardState === "active") {
+    if (profileWantsRestart || (roll === 2 && current.cardState === "active")) {
       const emitted = runServerRestartFault(stepIndex + 1, trace);
       if (emitted) {
         stepIndex += 1;
         continue;
       }
+    } else if (roll === 0) {
+      runNonOwnerCreateCardProbe(stepIndex);
+    } else if (roll === 1) {
+      runDuplicateRedeemProbe(stepIndex);
     }
 
     const candidates = enabledActions(projectState(), profile, stepIndex, aliceDroppedRecently);
