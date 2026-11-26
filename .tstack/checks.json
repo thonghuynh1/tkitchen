@@ -1,0 +1,17 @@
+{
+  "required": [
+    { "name": "format", "run": "npm run format:check" },
+    { "name": "lint", "run": "npm run lint" },
+    { "name": "lint-guard", "run": "npm run lint:guard" },
+    { "name": "typecheck", "run": "npm run typecheck" },
+    { "name": "seams", "run": "npm run seams" },
+    { "name": "structure", "run": "npm run verify:structure" },
+    { "name": "test", "run": "npm test --" },
+    { "name": "test-sim", "run": "npm run test:sim" },
+    { "name": "build-web", "run": "npm run build:web" }
+  ],
+  "tests": {
+    "required": true,
+    "runners": ["npm test --"]
+  }
+}

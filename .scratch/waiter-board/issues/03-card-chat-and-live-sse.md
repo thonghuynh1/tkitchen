@@ -96,3 +96,17 @@ Build `modules/chat/` (1-level threads, monotonic `seq`, `@waiter` placeholder p
 ## Blocked by
 
 - Local: `02-cards-invites-and-archive.md`
+
+## Independent QA
+
+- Verdict: **fail** at `4c1d411d484b132d1b7a5f4239c2448506542d5d`.
+- D16: the real CLI returned 403 for both chat GET and POST after a restart with a replacement configured host owner who had no membership row. `/v1/me` confirmed `isOwner: true`. The route contract allows the owner; expected 200 and 201 respectively.
+- The fresh repo gate, seven focused tests, and the ordinary CLI chat, catch-up, revocation, and persistence checks passed.
+- Evidence: [Initial QA review](../../../.verification-evidence/verify-tkitchen/qa-03-4c1d411/review.md).
+
+### Re-review
+
+- Verdict: **pass** at `1cbfc8edc1c6e70552a858bf73262584929762ed`. This supersedes the initial verdict.
+- The replacement configured owner now gets 200/201 on active chat without a membership row. Ordinary non-members still get 403, archived chat still gets 404, and chat SSE remains member-only.
+- The fresh repo gate, eight focused tests, and the isolated CLI checks passed.
+- Evidence: [QA re-review](../../../.verification-evidence/verify-tkitchen/qa-03-1cbfc8e/review.md).

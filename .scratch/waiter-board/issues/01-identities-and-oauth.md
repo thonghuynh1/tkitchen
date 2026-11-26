@@ -61,31 +61,31 @@ Add GitHub OAuth sign-in, session cookies, host-owner recognition, and `--public
 
 ## Acceptance criteria
 
-- [ ] `parseBoard` accepts `--public-url https://board.example.test`, normalizes trailing slash, and rejects non-http(s) URLs with exit code 2
+- [x] `parseBoard` accepts `--public-url https://board.example.test`, normalizes trailing slash, and rejects non-http(s) URLs with exit code 2
   - Run: `npx vitest run modules/cli/tests/`
   - Test: `planned` → `modules/cli/tests/parse-board.test.ts` → `parses --public-url and rejects invalid URLs`
   - Expected: `--public-url https://board.example.test/` parses to `publicUrl: "https://board.example.test"`; `--public-url ftp://bad` returns `{ ok: false }`.
   - Fails when: `--public-url` is ignored or invalid schemes are accepted.
 
-- [ ] GitHub OAuth flow via injected `GitHubOAuthPort` signs in a user, keys them as `github:<numeric id>`, sets `Secure` cookie iff `publicUrl` is `https://`, and sets `isOwner` strictly against `ownerGithubId`
+- [x] GitHub OAuth flow via injected `GitHubOAuthPort` signs in a user, keys them as `github:<numeric id>`, sets `Secure` cookie iff `publicUrl` is `https://`, and sets `isOwner` strictly against `ownerGithubId`
   - Run: `npx vitest run modules/board-http/tests/auth.test.ts`
   - Test: `planned` → `modules/board-http/tests/auth.test.ts` → `completes OAuth callback, sets Secure cookie for https publicUrl, and distinguishes owner from non-owner`
   - Expected: `GET /v1/auth/github` redirects to `<publicUrl>/v1/auth/github/callback`; callback with matching state sets `HttpOnly; SameSite=Lax; Secure` cookie; `GET /v1/me` returns `{ ok: true, user: { id: "github:42", login: "owner", isOwner: true } }` for owner and `isOwner: false` for `"github:99"`.
   - Fails when: cookie omits `Secure` on `https://`, `UserId` keys by login instead of numeric id, or non-owner gets `isOwner: true`.
 
-- [ ] OAuth callback rejects mismatched CSRF `state` with 400 and no session created; open redirect `returnTo=//evil.test` is normalized to `/`
+- [x] OAuth callback rejects mismatched CSRF `state` with 400 and no session created; open redirect `returnTo=//evil.test` is normalized to `/`
   - Run: `npx vitest run modules/board-http/tests/auth.test.ts`
   - Test: `planned` → `modules/board-http/tests/auth.test.ts` → `rejects bad OAuth state without creating a session and sanitizes returnTo`
   - Expected: `400` response, zero rows inserted in `sessions`, and `//evil.test` redirects to `/`.
   - Fails when: mismatched state creates a session or external redirect URL is followed.
 
-- [ ] `POST /v1/auth/logout` invalidates the session in `board.db` so subsequent `GET /v1/me` returns `401`, and `kitchen.db` is never created or modified
+- [x] `POST /v1/auth/logout` invalidates the session in `board.db` so subsequent `GET /v1/me` returns `401`, and `kitchen.db` is never created or modified
   - Run: `npx vitest run modules/board-http/tests/auth.test.ts`
   - Test: `planned` → `modules/board-http/tests/auth.test.ts` → `logout invalidates session and never touches kitchen.db`
   - Expected: `GET /v1/me` returns `401` after logout; `kitchen.db` does not exist in the isolated `TKITCHEN_HOME` dir while `board.db` does.
   - Fails when: session remains valid after logout or `kitchen.db` is opened.
 
-- [ ] Full repo verification passes with zero regressions
+- [x] Full repo verification passes with zero regressions
   - Run: `npm run verify`
   - Test: repo gate
   - Expected: exit 0 (`format:check`, `lint`, `lint:guard`, `typecheck`, `seams`, `verify:structure`, `test`, `test:sim`, `build:web`).
@@ -94,3 +94,23 @@ Add GitHub OAuth sign-in, session cookies, host-owner recognition, and `--public
 ## Blocked by
 
 None - can start immediately.
+
+## Implementation notes (eng-01)
+
+- Tests: `modules/cli/tests/parse-board.test.ts`, `modules/board-http/tests/auth.test.ts`, `modules/identities/tests/identities.test.ts`.
+- Real-CLI evidence: `.verification-evidence/verify-tkitchen/20261126-221502-identities-oauth/transcript.log` (real GitHub sign-in is not covered: needs a registered OAuth app, issue 10 HITL smoke).
+- `GET /v1/me` returns `{ ok: true, authenticated: true, user: { id, login, isOwner } }` when signed in (satisfies D13 and the acceptance test) and `401 { ok: false, error: "unauthorized" }` otherwise.
+- Without OAuth env vars the board still serves the page and health; `/v1/auth/*` and `/v1/me` answer `503 sign-in is not configured`. Client id without secret, or a non-numeric owner id, exit 2.
+- Sessions last 30 days; cookies `tkitchen_session`, `tkitchen_oauth_state`, `tkitchen_oauth_return`.
+
+## Comments
+
+- **QA-01: verdict fail** at `4f1d40dc6fe7e22d12e9b9644bf3912ef47abaaf`. Real CLI owner and guest sign-in returned `ok: true` but no `authenticated: true`. This matches the exact acceptance test and conflicts with this issue's D13 clause. Reconcile the two success-body contracts before accepting the slice.
+- Independent run: 23 targeted tests and 21 simulation tests passed; web build passed. The full gate stopped on formatting of two unchanged verification Markdown files. A separate unit run had 210 passes and one timeout in the unchanged real-Git setup hook.
+- Review evidence: `F:/MyWork/tkitchen/.verification-evidence/verify-tkitchen/qa-01-4f1d40d/review.md`.
+
+- **QA-01 re-review: verdict fail** at `8bfec9f5ae2f3957338cbc5211c855f132b4d408`. The same real CLI drive verified `ok: true` and `authenticated: true` for both owner and guest, and formatting now passes. The required full gate still exits 1: 210 of 211 unit tests passed, with the same 10-second setup timeout in the unchanged real-Git test. Simulations and web build were not reached by this gate run.
+- Re-review evidence: `F:/MyWork/tkitchen/.verification-evidence/verify-tkitchen/qa-01-8bfec9f/review.md`.
+
+- **QA-01 re-review: verdict pass** at `fec5acff326a459ce8e6c1dd29f9031447601174`. A fresh isolated CLI run verified the signed-in response for both owner and guest. The standard `npm run verify` ran to completion: 211 unit tests, 21 simulation tests, and the web build passed. The fixture hook timeout change did not alter any behavior assertions.
+- Final QA evidence: `F:/MyWork/tkitchen/.verification-evidence/verify-tkitchen/qa-01-fec5acf/review.md`.
