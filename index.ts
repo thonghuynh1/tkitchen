@@ -16,6 +16,30 @@ export { getHistory, getNotices } from "./modules/notices/index.ts";
 export { runRoundForRepo, runRounds } from "./modules/rounds/index.ts";
 export type { BoardServer, BoardServerOptions } from "./modules/board-http/index.ts";
 export { startBoardServer } from "./modules/board-http/adapters.ts";
+export {
+  IdentityService,
+  isOwner,
+  isSessionId,
+  isUserId,
+  normalizeOwnerId,
+  safeReturnTo,
+  SESSION_TTL_MS,
+  userIdFromGithub,
+} from "./modules/identities/index.ts";
+export type {
+  GitHubOAuthPort,
+  GitHubProfile,
+  IdentityServiceDeps,
+  IdentityStore,
+  IdentityUser,
+  SessionId,
+  SessionRecord,
+  SignInOutcome,
+  SignInStart,
+  UserId,
+  Viewer,
+} from "./modules/identities/index.ts";
+export { LiveGitHubOAuth, SqliteIdentityStore } from "./modules/identities/adapters.ts";
 export { parseCommand, USAGE } from "./modules/cli/index.ts";
 export type { Command, ParsedCommand } from "./modules/cli/index.ts";
 export { runCli } from "./modules/cli/adapters.ts";

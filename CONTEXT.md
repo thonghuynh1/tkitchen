@@ -67,6 +67,14 @@ _Avoid_: alert, notification, warning
 > **Dev:** "And if B merges C later, do we need another **Trigger** to close B's **Notice**?"
 > **Domain expert:** "No. The next **Round** sees B caught up and the **Notice** closes. **Triggers** are history; **Notices** are what is open now."
 
+### Waiter board
+
+**Board user**:
+A person signed in to the waiter board with GitHub, identified by `github:<numeric id>` and never by their login.
+
+**Host owner**:
+The one Board user pinned by `TKITCHEN_BOARD_OWNER_GITHUB_ID`; the only person who runs the board's owner actions.
+
 ## Proposed
 
 Not settled until waiter-board ticket 02 decides them (`.scratch/waiter-board/wayfinder/02-waiter-reaches-the-owner.md`):

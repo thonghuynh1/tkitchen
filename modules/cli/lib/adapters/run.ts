@@ -2,7 +2,13 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { FileConfig, ConfigError } from "../../../config/adapters.ts";
 import { KitchenStore } from "../../../triggers/adapters.ts";
-import { InterruptibleScheduler, kitchenHome, machineName, SystemClock } from "../../../platform/adapters.ts";
+import {
+  InterruptibleScheduler,
+  kitchenHome,
+  machineName,
+  SystemClock,
+  SystemIds,
+} from "../../../platform/adapters.ts";
 import { runRounds, serve } from "../../../rounds/index.ts";
 import { FileLock } from "../../../lock/adapters.ts";
 import { GitRepoImpl, GIT_TIMEOUT_MS } from "../../../git/adapters.ts";
@@ -11,7 +17,9 @@ import { getNotices, formatNotices, getHistory, formatHistory } from "../../../n
 import { exportLines, serializeExportLines, InvalidCursorError } from "../../../export/index.ts";
 import { ReadOnlyExportStore } from "../../../export/adapters.ts";
 import { startBoardServer } from "../../../board-http/adapters.ts";
-import { parseCommand, USAGE } from "../parse.ts";
+import { IdentityService, normalizeOwnerId } from "../../../identities/index.ts";
+import { LiveGitHubOAuth, SqliteIdentityStore } from "../../../identities/adapters.ts";
+import { normalizePublicUrl, parseCommand, USAGE } from "../parse.ts";
 
 const EXIT_USAGE = 2;
 const RADIX = 10;
@@ -81,14 +89,63 @@ async function runServe(): Promise<number> {
   }
 }
 
-async function runBoard(port: number, host: string): Promise<number> {
+function envText(name: string): string | undefined {
+  const raw = process.env[name];
+  return raw === undefined || raw === "" ? undefined : raw;
+}
+
+type BoardSignIn =
+  | { ok: true; identities: IdentityService | undefined; store: SqliteIdentityStore | undefined }
+  | { ok: false; complaint: string };
+
+function boardSignIn(): BoardSignIn {
+  const clientId = envText("TKITCHEN_GITHUB_CLIENT_ID");
+  const clientSecret = envText("TKITCHEN_GITHUB_CLIENT_SECRET");
+  if (clientId === undefined && clientSecret === undefined) {
+    console.error("sign-in is off: set TKITCHEN_GITHUB_CLIENT_ID and TKITCHEN_GITHUB_CLIENT_SECRET to turn it on");
+    return { ok: true, identities: undefined, store: undefined };
+  }
+  if (clientId === undefined || clientSecret === undefined) {
+    return { ok: false, complaint: "TKITCHEN_GITHUB_CLIENT_ID and TKITCHEN_GITHUB_CLIENT_SECRET must be set together" };
+  }
+  const ownerText = envText("TKITCHEN_BOARD_OWNER_GITHUB_ID");
+  const ownerId = normalizeOwnerId(ownerText);
+  if (ownerText !== undefined && ownerId === null) {
+    return { ok: false, complaint: "TKITCHEN_BOARD_OWNER_GITHUB_ID needs a numeric GitHub id" };
+  }
+  if (ownerId === null) console.error("no host owner: set TKITCHEN_BOARD_OWNER_GITHUB_ID so one person is the owner");
+  const store = new SqliteIdentityStore(join(kitchenHome(), "board.db"));
+  const identities = new IdentityService({
+    store,
+    oauth: new LiveGitHubOAuth({ clientId, clientSecret }),
+    clock: new SystemClock(),
+    ids: new SystemIds(),
+    ownerId,
+  });
+  return { ok: true, identities, store };
+}
+
+async function runBoard(port: number, host: string, publicUrlWord: string | undefined): Promise<number> {
   const webRoot = join(import.meta.dirname, "..", "..", "..", "..", "dist", "web");
   if (!existsSync(join(webRoot, "index.html"))) {
     console.error("board page not built: run npm run build:web first");
     return 1;
   }
-  const board = await startBoardServer({ port, host, webRoot });
+  const publicUrlEnv = envText("TKITCHEN_BOARD_PUBLIC_URL");
+  const publicUrl =
+    publicUrlWord ?? (publicUrlEnv === undefined ? undefined : (normalizePublicUrl(publicUrlEnv) ?? undefined));
+  if (publicUrlWord === undefined && publicUrlEnv !== undefined && publicUrl === undefined) {
+    console.error("TKITCHEN_BOARD_PUBLIC_URL needs an http or https URL");
+    return EXIT_USAGE;
+  }
+  const signIn = boardSignIn();
+  if (!signIn.ok) {
+    console.error(signIn.complaint);
+    return EXIT_USAGE;
+  }
+  const board = await startBoardServer({ port, host, webRoot, publicUrl, identities: signIn.identities });
   console.log("board at " + board.url);
+  if (signIn.identities !== undefined) console.log("sign-in via " + board.publicUrl);
   await new Promise<void>((resolveStop) => {
     const onSignal = (): void => {
       process.off("SIGINT", onSignal);
@@ -99,6 +156,7 @@ async function runBoard(port: number, host: string): Promise<number> {
     process.on("SIGTERM", onSignal);
   });
   await board.close();
+  signIn.store?.close();
   return 0;
 }
 
@@ -215,7 +273,7 @@ export async function runCli(words: readonly string[]): Promise<number> {
     case "export":
       return runExport(command.after);
     case "board":
-      return runBoard(command.port, command.host);
+      return runBoard(command.port, command.host, command.publicUrl);
     case "serve":
       return runServe();
     case "round":

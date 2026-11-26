@@ -1,1 +1,1 @@
-export { InterruptibleScheduler, kitchenHome, machineName, SystemClock } from "./lib/adapters/env.ts";
+export { InterruptibleScheduler, kitchenHome, machineName, SystemClock, SystemIds } from "./lib/adapters/env.ts";

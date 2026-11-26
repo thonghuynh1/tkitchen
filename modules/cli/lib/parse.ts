@@ -8,7 +8,7 @@ export const USAGE = [
   "  round [--repo <name>]   run one Round for one or all repos",
   "  notices [--json] [--history]   show open Notices, or Trigger history with --history",
   "  export --json [--after <cursor>]   export Triggers for aiNho as NDJSON",
-  "  board [--port <n>] [--host <addr>]   serve the waiter board page",
+  "  board [--port <n>] [--host <addr>] [--public-url <url>]   serve the waiter board page",
   "  --help             show this help",
 ].join("\n");
 
@@ -16,6 +16,13 @@ const DEFAULT_BOARD_PORT = 3000;
 const DEFAULT_BOARD_HOST = "127.0.0.1";
 const MAX_PORT = 65535;
 const RADIX = 10;
+
+export function normalizePublicUrl(raw: string): string | null {
+  if (!URL.canParse(raw)) return null;
+  const url = new URL(raw);
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  return url.href.replace(/\/+$/, "");
+}
 
 function refused(complaint: string): ParsedCommand {
   return { ok: false, complaint, showUsage: false };
@@ -31,6 +38,7 @@ function parseServe(words: readonly string[]): ParsedCommand {
 function parseBoard(words: readonly string[]): ParsedCommand {
   let port = DEFAULT_BOARD_PORT;
   let host = DEFAULT_BOARD_HOST;
+  let publicUrl: string | undefined;
   for (let i = 1; i < words.length; i++) {
     const arg = words[i];
     if (arg === "--port") {
@@ -48,11 +56,19 @@ function parseBoard(words: readonly string[]): ParsedCommand {
       }
       host = value;
       i++;
+    } else if (arg === "--public-url") {
+      const value = words[i + 1];
+      const normalized = value === undefined ? null : normalizePublicUrl(value);
+      if (normalized === null) {
+        return refused("--public-url needs an http or https URL");
+      }
+      publicUrl = normalized;
+      i++;
     } else {
       return refused("unknown argument: " + arg);
     }
   }
-  return { ok: true, command: { kind: "board", port, host } };
+  return { ok: true, command: { kind: "board", port, host, publicUrl } };
 }
 
 function parseRound(words: readonly string[]): ParsedCommand {

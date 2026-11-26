@@ -20,7 +20,7 @@ fixtures/           what tests share outside any module (the fake gh)
 scripts/            the checkers; scripts/tests/ holds their suites and fixtures
 ```
 
-Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen home), triggers (Trigger, Thread, Disposition, the kitchen store), branches (watched branches, Base resolution), notices, rounds (Round, serve loop), export, git, forge, config, lock, board-http (the board's HTTP server on `node:http`: the built page plus `/v1/health`), cli (the words on the command line and the wiring that runs them), testing (the process helpers module tests share; test code only, and the root `index.ts` does not export it).
+Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen home), triggers (Trigger, Thread, Disposition, the kitchen store), branches (watched branches, Base resolution), notices, rounds (Round, serve loop), export, git, forge, config, lock, board-http (the board's HTTP server on `node:http`: the built page, `/v1/health`, and the sign-in routes `/v1/auth/*` and `/v1/me`), identities (GitHub sign-in: users, sessions, the host owner, in `board.db`), cli (the words on the command line and the wiring that runs them), testing (the process helpers module tests share; test code only, and the root `index.ts` does not export it).
 
 ## Rules
 
