@@ -540,4 +540,60 @@ describe("board web UI E2E", () => {
     await ownerPage.clickButtonByText("Sign out");
     await ownerPage.waitForText("Sign in with GitHub");
   }, 30_000);
+
+  it("switching cards clears unsent drafts and idle invitee appears immediately for owner removal", async () => {
+    const ownerPage = await browser.newPage();
+    const alicePage = await browser.newPage();
+
+    oauth.setNextLogin("owner");
+    await ownerPage.navigate(board.url + "/");
+    await ownerPage.clickButtonByText("Sign in with GitHub");
+    await ownerPage.waitForText("New card");
+
+    await ownerPage.clickButtonByText("New card");
+    await ownerPage.focusAndType("#new-card-title", "Card A");
+    await ownerPage.clickButtonByText("Create card");
+    await ownerPage.waitForText("Card A");
+
+    await ownerPage.clickButtonByText("New card");
+    await ownerPage.focusAndType("#new-card-title", "Card B");
+    await ownerPage.clickButtonByText("Create card");
+    await ownerPage.waitForText("Card B");
+
+    await ownerPage.clickSelector('button[aria-label="Open chat for Card A"]');
+    await ownerPage.waitFor("document.querySelector('[data-testid=\"card-chat-panel\"]') !== null");
+    await ownerPage.focusAndType('textarea[aria-label="Chat composer"]', "draft for Card A");
+    expect(await ownerPage.evaluate("document.querySelector('textarea[aria-label=\"Chat composer\"]')?.value")).toBe(
+      "draft for Card A",
+    );
+
+    await ownerPage.clickSelector('button[aria-label="Open chat for Card B"]');
+    await ownerPage.waitFor(
+      "document.querySelector('[data-testid=\"card-chat-panel\"]')?.textContent?.includes('Card B') === true",
+    );
+    expect(await ownerPage.evaluate("document.querySelector('textarea[aria-label=\"Chat composer\"]')?.value")).toBe(
+      "",
+    );
+
+    await ownerPage.waitFor(
+      "(() => { const card = document.querySelector('[data-card-title=\"Card A\"]'); const btn = [...(card?.querySelectorAll('button') ?? [])].find((n) => n.textContent?.trim() === 'Copy invite link'); if (!btn) return false; btn.click(); return true; })()",
+    );
+    const inviteUrl = await ownerPage.waitFor(
+      "document.querySelector('[data-card-title=\"Card A\"] [data-testid^=\"invite-url-\"]')?.textContent ?? ''",
+    );
+    expect(String(inviteUrl)).toContain("/invite/");
+
+    oauth.setNextLogin("alice");
+    await alicePage.navigate(String(inviteUrl));
+    await alicePage.waitForText("Card A");
+    await alicePage.waitFor("document.querySelector('[data-testid=\"card-chat-panel\"]') !== null");
+
+    await ownerPage.waitFor(
+      'document.querySelector(\'[data-card-title="Card A"] [data-testid="member-github:2"]\') !== null',
+    );
+    await ownerPage.clickSelector('[data-card-title="Card A"] [data-testid="member-github:2"] button');
+
+    await alicePage.waitFor("document.querySelector('[data-testid=\"card-chat-panel\"]') === null");
+    await alicePage.waitForText("No cards yet — ask the owner for an invite.");
+  }, 30_000);
 });

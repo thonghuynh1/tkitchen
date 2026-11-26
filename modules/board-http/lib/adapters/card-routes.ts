@@ -229,7 +229,13 @@ function inviteReply(
   });
 }
 
-function redeemReply(cards: CardService, viewer: Viewer, tokenSegment: string, res: ServerResponse): void {
+function redeemReply(
+  cards: CardService,
+  live: LiveHub | null,
+  viewer: Viewer,
+  tokenSegment: string,
+  res: ServerResponse,
+): void {
   if (!isInviteToken(tokenSegment)) {
     sendJson(res, STATUS_GONE, { ok: false, error: "invite is no longer valid" });
     return;
@@ -239,6 +245,7 @@ function redeemReply(cards: CardService, viewer: Viewer, tokenSegment: string, r
     sendJson(res, STATUS_GONE, { ok: false, error: "invite is no longer valid" });
     return;
   }
+  live?.broadcast(outcome.card.memberIds, "card_created", { card: outcome.card });
   sendJson(res, STATUS_OK, { ok: true, card: outcome.card });
 }
 
@@ -368,7 +375,7 @@ export async function routeCards(
       inviteReply(auth, cards, viewer, matched.cardSegment, res);
       return;
     case "redeem":
-      redeemReply(cards, viewer, matched.tokenSegment, res);
+      redeemReply(cards, live, viewer, matched.tokenSegment, res);
       return;
     case "remove-member":
       removeMemberReply(cards, live, viewer, matched.cardSegment, matched.userSegment, res);

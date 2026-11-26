@@ -316,14 +316,13 @@ export function App(): React.JSX.Element {
     if (openCardId === cardId) setOpenCardId(null);
   }
 
-  async function onPostEntry(text: string, replyToId: WebChatEntryId | null): Promise<boolean> {
-    if (openCardId === null) return false;
+  async function onPostEntry(cardId: WebCardId, text: string, replyToId: WebChatEntryId | null): Promise<boolean> {
     setChatError(null);
-    const outcome = await postChatEntry({ cardId: openCardId, text, replyToId });
+    const outcome = await postChatEntry({ cardId, text, replyToId });
     if (!outcome.ok) {
       if (outcome.status === 403 || outcome.status === 404) {
-        setCards((prev) => removeCardFromList(prev, openCardId));
-        setOpenCardId(null);
+        setCards((prev) => removeCardFromList(prev, cardId));
+        setOpenCardId((current) => (current === cardId ? null : current));
         setBoardNotice("This card is no longer available.");
         return false;
       }
@@ -332,7 +331,7 @@ export function App(): React.JSX.Element {
     }
     setEntriesByCard((prev) => ({
       ...prev,
-      [openCardId]: mergeChatEntries(prev[openCardId] ?? [], [outcome.data]),
+      [cardId]: mergeChatEntries(prev[cardId] ?? [], [outcome.data]),
     }));
     return true;
   }
@@ -454,6 +453,7 @@ export function App(): React.JSX.Element {
 
       {openCard !== null ? (
         <CardChatPanel
+          key={openCard.id}
           card={openCard}
           entries={entriesByCard[openCard.id] ?? []}
           loading={chatLoading}

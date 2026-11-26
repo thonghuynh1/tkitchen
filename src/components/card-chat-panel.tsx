@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Textarea } from "@/components/ui/input";
 import { applyWaiterMention, findWaiterMentionMatch, groupChatThreads } from "@/lib/board-state";
 import type { WaiterMentionMatch } from "@/lib/board-state";
-import type { WebCard } from "../../modules/cards/web";
+import type { WebCard, WebCardId } from "../../modules/cards/web";
 import type { WebChatEntry, WebChatEntryId } from "../../modules/chat/web";
 
 export interface CardChatPanelProps {
@@ -15,7 +15,7 @@ export interface CardChatPanelProps {
   readonly loading: boolean;
   readonly errorNotice: string | null;
   readonly onClose: () => void;
-  readonly onPostEntry: (text: string, replyToId: WebChatEntryId | null) => Promise<boolean>;
+  readonly onPostEntry: (cardId: WebCardId, text: string, replyToId: WebChatEntryId | null) => Promise<boolean>;
 }
 
 interface EntryRowProps {
@@ -90,7 +90,7 @@ export function CardChatPanel({
     const trimmed = draft.trim();
     if (trimmed === "" || sending) return;
     setSending(true);
-    const ok = await onPostEntry(trimmed, replyingTo?.id ?? null);
+    const ok = await onPostEntry(card.id, trimmed, replyingTo?.id ?? null);
     setSending(false);
     if (ok) {
       setDraft("");
