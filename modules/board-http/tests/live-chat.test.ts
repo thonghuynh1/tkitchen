@@ -196,7 +196,7 @@ async function openSse(session: string): Promise<SseClient> {
   return { nextFrame, drainUntilEnd, close };
 }
 
-async function startStack(dbPath: string, idStart = 0): Promise<void> {
+async function startStack(dbPath: string, idStart = 0, ownerGithubNum = 1): Promise<void> {
   identityStore = new SqliteIdentityStore(dbPath);
   cardStore = new SqliteCardStore(dbPath);
   chatStore = new SqliteChatStore(dbPath);
@@ -211,7 +211,7 @@ async function startStack(dbPath: string, idStart = 0): Promise<void> {
     }),
     clock: fixedClock,
     ids: new CountingIds(idStart),
-    ownerId: userIdFromGithub(1),
+    ownerId: userIdFromGithub(ownerGithubNum),
   });
   const cards = new CardService({ store: cardStore, clock: fixedClock, ids: new CountingIds(idStart) });
   const chat = new ChatService({
@@ -483,5 +483,85 @@ describe("board live chat and SSE", () => {
     ).toBe(400);
 
     await ownerStream.close();
+  });
+
+  it("allows a replacement host owner without membership to read and post chat while keeping SSE member-only and archived 404", async () => {
+    const ownerSession = await signIn("owner");
+    const aliceSession = await signIn("alice");
+    const { cardId } = await createSharedCard(ownerSession, [aliceSession]);
+
+    const initialPost = await requestJson("/v1/cards/" + cardId + "/messages", {
+      method: "POST",
+      session: ownerSession,
+      body: { text: "before handover" },
+    });
+    expect(initialPost.status).toBe(201);
+
+    await board.close();
+    chatStore.close();
+    cardStore.close();
+    identityStore.close();
+
+    await startStack(join(home, "board.db"), 200, 4);
+
+    const bobAsOwnerSession = await signIn("bob");
+    const charlieNonMemberSession = await signIn("charlie");
+    const ownerStream = await openSse(ownerSession);
+    const bobStream = await openSse(bobAsOwnerSession);
+
+    const bobGet = await requestJson("/v1/cards/" + cardId + "/messages?after=0", { session: bobAsOwnerSession });
+    expect(bobGet.status).toBe(200);
+    const beforeRows = arrayProp(await readJson(bobGet), "messages");
+    expect(beforeRows).toHaveLength(1);
+    expect(beforeRows[0]?.["text"]).toBe("before handover");
+
+    const bobPost = await requestJson("/v1/cards/" + cardId + "/messages", {
+      method: "POST",
+      session: bobAsOwnerSession,
+      body: { text: "from replacement owner" },
+    });
+    expect(bobPost.status).toBe(201);
+    const bobPosted = recordProp(await readJson(bobPost), "message");
+    expect(bobPosted["seq"]).toBe(2);
+    expect(bobPosted["authorId"]).toBe("github:4");
+
+    const memberFrame = await ownerStream.nextFrame();
+    expect(memberFrame?.kind).toBe("message_created");
+    expect(recordProp(memberFrame!.data, "message")["text"]).toBe("from replacement owner");
+
+    expect(
+      (await requestJson("/v1/cards/" + cardId + "/messages?after=0", { session: charlieNonMemberSession })).status,
+    ).toBe(403);
+    expect(
+      (
+        await requestJson("/v1/cards/" + cardId + "/messages", {
+          method: "POST",
+          session: charlieNonMemberSession,
+          body: { text: "stranger blocked" },
+        })
+      ).status,
+    ).toBe(403);
+
+    const archiveRes = await requestJson("/v1/cards/" + cardId, { method: "DELETE", session: bobAsOwnerSession });
+    expect(archiveRes.status).toBe(200);
+
+    const bobArchivedFrame = await bobStream.nextFrame();
+    expect(bobArchivedFrame).toEqual({ kind: "card_removed", data: { cardId } });
+
+    expect(
+      (await requestJson("/v1/cards/" + cardId + "/messages?after=0", { session: bobAsOwnerSession })).status,
+    ).toBe(404);
+    expect(
+      (
+        await requestJson("/v1/cards/" + cardId + "/messages", {
+          method: "POST",
+          session: bobAsOwnerSession,
+          body: { text: "archived blocked" },
+        })
+      ).status,
+    ).toBe(404);
+
+    await ownerStream.close();
+    await bobStream.close();
   });
 });

@@ -34,7 +34,7 @@ export class ChatService {
   private checkAccess(viewer: Viewer, cardId: CardId): "ok" | "not-found" | "forbidden" {
     const card = this.cards.getCard(cardId);
     if (card === null || card.archivedAt !== null) return "not-found";
-    if (!this.cards.isMember(cardId, viewer.user.id)) return "forbidden";
+    if (!viewer.isOwner && !this.cards.isMember(cardId, viewer.user.id)) return "forbidden";
     return "ok";
   }
 

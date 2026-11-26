@@ -131,6 +131,18 @@ describe("chat domain", () => {
     const emptyText = service.postEntry(owner, { cardId, text: "   \n\t ", replyToId: null });
     expect(emptyText).toEqual({ ok: false, reason: "empty-text" });
     expect(store.rows).toHaveLength(3);
+
+    const replacementOwner = makeViewer(4, "bob", true);
+    const replacementRead = service.listEntries(replacementOwner, { cardId, afterSeq: 0 });
+    expect(replacementRead.ok).toBe(true);
+    if (replacementRead.ok) expect(replacementRead.entries).toHaveLength(3);
+    const replacementPost = service.postEntry(replacementOwner, {
+      cardId,
+      text: "owner handover note",
+      replyToId: null,
+    });
+    expect(replacementPost.ok).toBe(true);
+    if (replacementPost.ok) expect(replacementPost.entry.seq).toBe(4);
   });
 
   it("persists monotonic per-card seq in SqliteChatStore across reopen and enforces membership", async () => {
