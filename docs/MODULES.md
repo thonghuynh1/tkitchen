@@ -49,7 +49,7 @@ Each rule has a failing fixture in `tests/quality/`: `seams.test.ts`, `structure
 
 ### Lint ratchet
 
-`scripts/lint-ratchet.ts` counts oxlint diagnostics per file and rule and compares them with `lint-baseline.json`. A count above the baseline fails, printing each diagnostic in that bucket as `file:line rule message`. A count below it passes with a note to tighten the baseline. `npm run lint:baseline` rewrites the baseline from a whole-repo run. The ratchet also reads the baseline and `.oxlintrc.json` at the merge base with `origin/main` and refuses a raised count for a rule that was already on there, so a new rule may start with existing violations, and after that the count only goes down.
+`scripts/lint-ratchet.ts` counts oxlint diagnostics per file and rule and compares them with `lint-baseline.json`. A count above the baseline fails, printing each diagnostic in that bucket as `file:line rule message`. A count below it passes with a note to tighten the baseline. `npm run lint:baseline` rewrites the baseline from a whole-repo run. The ratchet also reads the baseline and `.oxlintrc.json` at the merge base with `origin/main` and refuses a raised count for a rule that was already on there, so a new rule may start with existing violations, and after that the count only goes down. A file that git sees as renamed since the merge base keeps the baseline of its old path, so a pure move is not a raise; a raise at the new path still refuses.
 
 ### Lint config guard
 

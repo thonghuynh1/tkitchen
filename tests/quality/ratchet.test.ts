@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { compare, countDiagnostics, enabledRules, parseReport, refuseRaises } from "../../scripts/lint-ratchet.ts";
+import {
+  compare,
+  countDiagnostics,
+  enabledRules,
+  parseRenames,
+  parseReport,
+  refuseRaises,
+} from "../../scripts/lint-ratchet.ts";
 import type { Baseline, Diagnostic } from "../../scripts/lint-ratchet.ts";
 
 const FLOAT = "typescript/no-floating-promises";
@@ -78,6 +85,26 @@ describe("refuseRaises", () => {
   });
   it("raising an already enabled rule is refused", () => {
     expect(refuseRaises({ "src/a.ts": { [FLOAT]: 3 } }, TWO_FLOATS, new Set([FLOAT]))).toHaveLength(1);
+  });
+  const moved = new Map([["modules/a.ts", "src/a.ts"]]);
+  it("a renamed file keeps its baseline at the same count", () => {
+    expect(refuseRaises({ "modules/a.ts": { [FLOAT]: 2 } }, TWO_FLOATS, new Set([FLOAT]), moved)).toEqual([]);
+  });
+  it("a raise at a renamed file is still refused", () => {
+    expect(refuseRaises({ "modules/a.ts": { [FLOAT]: 3 } }, TWO_FLOATS, new Set([FLOAT]), moved)).toHaveLength(1);
+  });
+  it("an unrenamed new file gains no baseline from a rename", () => {
+    expect(refuseRaises({ "src/b.ts": { [FLOAT]: 1 } }, TWO_FLOATS, new Set([FLOAT]), moved)).toHaveLength(1);
+  });
+});
+
+describe("parseRenames", () => {
+  it("reads git name-status -z output, skipping plain entries", () => {
+    const text = "M\0src/kept.ts\0R077\0old dir/a file.ts\0moved.ts\0A\0src/new.ts\0";
+    expect([...parseRenames(text)]).toEqual([["moved.ts", "old dir/a file.ts"]]);
+  });
+  it("empty output means no renames", () => {
+    expect(parseRenames("").size).toBe(0);
   });
 });
 

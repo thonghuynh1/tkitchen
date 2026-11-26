@@ -90,11 +90,31 @@ export function compare(diagnostics: readonly Diagnostic[], baseline: Baseline):
   return { failures, notes };
 }
 
-export function refuseRaises(working: Baseline, atBase: Baseline, enabledAtBase: ReadonlySet<string>): string[] {
+export function parseRenames(nameStatus: string): ReadonlyMap<string, string> {
+  const fields = nameStatus.split("\0").filter((field) => field.length > 0);
+  const renames = new Map<string, string>();
+  for (let i = 0; i < fields.length;) {
+    const status = fields[i] ?? "";
+    if (/^[RC]/.test(status)) {
+      const was = fields[i + 1];
+      const now = fields[i + 2];
+      if (was !== undefined && now !== undefined) renames.set(now, was);
+    }
+    i += /^[RC]/.test(status) ? 3 : 2;
+  }
+  return renames;
+}
+
+export function refuseRaises(
+  working: Baseline,
+  atBase: Baseline,
+  enabledAtBase: ReadonlySet<string>,
+  renames: ReadonlyMap<string, string> = new Map(),
+): string[] {
   const refused: string[] = [];
   for (const [file, rules] of Object.entries(working)) {
     for (const [rule, count] of Object.entries(rules)) {
-      const before = allowed(atBase, file, rule);
+      const before = allowed(atBase, renames.get(file) ?? file, rule);
       if (count > before && enabledAtBase.has(rule)) {
         refused.push(
           file +
@@ -184,10 +204,12 @@ function main(root: string, write: boolean): number {
   }
   const working = asBaseline(JSON.parse(readFileSync(baselinePath, "utf8")));
   const base = mergeBase(root);
+  const renames = parseRenames(git(root, ["diff", "--find-renames", "--name-status", "-z", base, "--"]) ?? "");
   const refused = refuseRaises(
     working,
     asBaseline(jsonAt(root, base, BASELINE_FILE)),
     enabledRules(jsonAt(root, base, CONFIG_FILE)),
+    renames,
   );
   const verdict = compare(diagnostics, working);
   for (const note of verdict.notes) console.log(note);
