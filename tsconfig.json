@@ -16,7 +16,9 @@
     ]
   },
   "include": [
-    "src/**/*.ts",
+    "modules/**/*.ts",
+    "cli/**/*.ts",
+    "index.ts",
     "tests/**/*.ts"
   ]
 }

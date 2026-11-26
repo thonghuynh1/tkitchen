@@ -1,7 +1,7 @@
-const MODULE_INTERNALS = "^src/modules/[^/]+/(lib|tests)/";
-const PURE_LIB = "^src/modules/[^/]+/lib/(?!adapters/)";
-const PURE_ENTRY = "^src/modules/[^/]+/index\\.ts$";
-const NODE_SIDE = "^src/modules/[^/]+/(adapters\\.ts$|lib/adapters/)|^src/cli/";
+const MODULE_INTERNALS = "^modules/[^/]+/(lib|tests)/";
+const PURE_LIB = "^modules/[^/]+/lib/(?!adapters/)";
+const PURE_ENTRY = "^modules/[^/]+/index\\.ts$";
+const NODE_SIDE = "^modules/[^/]+/(adapters\\.ts$|lib/adapters/)|^cli/";
 const DETERMINISTIC_BUILTINS = "^(node:)?crypto$";
 
 module.exports = {
@@ -10,29 +10,29 @@ module.exports = {
       name: "entry-points-only-across-modules",
       comment: "A module reaches another module only through its index.ts or adapters.ts.",
       severity: "error",
-      from: { path: "^src/modules/([^/]+)/" },
-      to: { path: MODULE_INTERNALS, pathNot: "^src/modules/$1/" },
+      from: { path: "^modules/([^/]+)/" },
+      to: { path: MODULE_INTERNALS, pathNot: "^modules/$1/" },
     },
     {
       name: "entry-points-only-from-outside",
       comment: "The CLI, the package entry, scripts and the root suites reach a module only through its entries.",
       severity: "error",
-      from: { pathNot: "^src/modules/" },
+      from: { pathNot: "^modules/" },
       to: { path: MODULE_INTERNALS },
     },
     {
       name: "module-tests-through-own-entry",
       comment: "A module's tests use its index.ts or adapters.ts, never its lib.",
       severity: "error",
-      from: { path: "^src/modules/([^/]+)/tests/" },
-      to: { path: "^src/modules/$1/lib/" },
+      from: { path: "^modules/([^/]+)/tests/" },
+      to: { path: "^modules/$1/lib/" },
     },
     {
       name: "tests-folder-is-private",
       comment: "Production code in a module never imports that module's tests.",
       severity: "error",
-      from: { path: "^src/modules/([^/]+)/(?!tests/)" },
-      to: { path: "^src/modules/$1/tests/" },
+      from: { path: "^modules/([^/]+)/(?!tests/)" },
+      to: { path: "^modules/$1/tests/" },
     },
     {
       name: "pure-lib-imports-no-node",
@@ -53,7 +53,7 @@ module.exports = {
       comment: "A module's index.ts exports contracts and pure operations only; Node code goes behind adapters.ts.",
       severity: "error",
       from: { path: PURE_ENTRY },
-      to: { path: "^src/modules/[^/]+/lib/adapters/|^src/modules/[^/]+/adapters\\.ts$" },
+      to: { path: "^modules/[^/]+/lib/adapters/|^modules/[^/]+/adapters\\.ts$" },
     },
     {
       name: "no-circular",

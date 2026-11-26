@@ -1,6 +1,6 @@
-import type { Store, Disposition, Trigger, RoundStatus } from "../../../src/modules/triggers/index.ts";
-import type { BranchState } from "../../../src/modules/branches/index.ts";
-import type { KitchenStore } from "../../../src/modules/triggers/adapters.ts";
+import type { Store, Disposition, Trigger, RoundStatus } from "../../../modules/triggers/index.ts";
+import type { BranchState } from "../../../modules/branches/index.ts";
+import type { KitchenStore } from "../../../modules/triggers/adapters.ts";
 
 export class SimStore implements Store {
   readonly txLog: string[] = [];

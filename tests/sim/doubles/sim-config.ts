@@ -1,4 +1,4 @@
-import type { Config, KitchenConfig, RepoConfig } from "../../../src/modules/config/index.ts";
+import type { Config, KitchenConfig, RepoConfig } from "../../../modules/config/index.ts";
 
 export class SimConfig implements Config {
   readonly repo: RepoConfig;

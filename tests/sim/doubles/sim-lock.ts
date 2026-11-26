@@ -1,4 +1,4 @@
-import type { Lock } from "../../../src/modules/lock/index.ts";
+import type { Lock } from "../../../modules/lock/index.ts";
 
 export class SimLockSystem {
   private holder: number | null = null;

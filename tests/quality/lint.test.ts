@@ -30,21 +30,21 @@ async function lintFixture(fixture: string, target: string): Promise<{ code: num
 
 describe("lint fixtures", () => {
   it("floating promise fails lint", async () => {
-    const linted = await lintFixture("floating-promise.ts.txt", "src/__lint_fixture__.ts");
+    const linted = await lintFixture("floating-promise.ts.txt", "modules/__lint_fixture__.ts");
     expect(linted.code).not.toBe(0);
     expect(linted.output).toContain("no-floating-promises");
   }, TEST_TIMEOUT);
   it("a comment fails lint", async () => {
-    const linted = await lintFixture("comment.ts.txt", "src/__lint_fixture__.ts");
+    const linted = await lintFixture("comment.ts.txt", "modules/__lint_fixture__.ts");
     expect(linted.code).not.toBe(0);
     expect(linted.output).toContain("tkitchen(no-comments)");
   }, TEST_TIMEOUT);
   it("a shebang passes lint", async () => {
-    const linted = await lintFixture("shebang.ts.txt", "src/__lint_fixture__.ts");
+    const linted = await lintFixture("shebang.ts.txt", "modules/__lint_fixture__.ts");
     expect(linted.code).toBe(0);
   }, TEST_TIMEOUT);
   it("a magic number in src fails lint", async () => {
-    const linted = await lintFixture("magic-number.ts.txt", "src/__lint_fixture__.ts");
+    const linted = await lintFixture("magic-number.ts.txt", "modules/__lint_fixture__.ts");
     expect(linted.code).not.toBe(0);
     expect(linted.output).toContain("no-magic-numbers");
   }, TEST_TIMEOUT);
@@ -53,17 +53,17 @@ describe("lint fixtures", () => {
     expect(linted.code).toBe(0);
   }, TEST_TIMEOUT);
   it("a non-exhaustive switch fails lint", async () => {
-    const linted = await lintFixture("switch.ts.txt", "src/__lint_fixture__.ts");
+    const linted = await lintFixture("switch.ts.txt", "modules/__lint_fixture__.ts");
     expect(linted.code).not.toBe(0);
     expect(linted.output).toContain("switch-exhaustiveness-check");
   }, TEST_TIMEOUT);
   it("an unsafe cast in src fails lint", async () => {
-    const linted = await lintFixture("unsafe-cast.ts.txt", "src/__lint_fixture__.ts");
+    const linted = await lintFixture("unsafe-cast.ts.txt", "modules/__lint_fixture__.ts");
     expect(linted.code).not.toBe(0);
     expect(linted.output).toContain("no-unsafe-type-assertion");
   }, TEST_TIMEOUT);
   it("a name using a word CONTEXT.md avoids fails lint", async () => {
-    const linted = await lintFixture("context-term.ts.txt", "src/__lint_fixture__.ts");
+    const linted = await lintFixture("context-term.ts.txt", "modules/__lint_fixture__.ts");
     expect(linted.code).not.toBe(0);
     expect(linted.output).toContain("design(context-terms)");
     expect(linted.output).toContain("Station");
@@ -78,12 +78,12 @@ describe("lint fixtures", () => {
     expect(linted.output).not.toContain("design(no-unsafe-as)");
   }, TEST_TIMEOUT);
   it("a file that only re-exports one file fails lint", async () => {
-    const linted = await lintFixture("pass-through.ts.txt", "src/__lint_fixture__.ts");
+    const linted = await lintFixture("pass-through.ts.txt", "modules/__lint_fixture__.ts");
     expect(linted.code).not.toBe(0);
     expect(linted.output).toContain("design(no-pass-through)");
   }, TEST_TIMEOUT);
   it("a bare string id type and id parameter fail lint", async () => {
-    const linted = await lintFixture("branded-ids.ts.txt", "src/__lint_fixture__.ts");
+    const linted = await lintFixture("branded-ids.ts.txt", "modules/__lint_fixture__.ts");
     expect(linted.code).not.toBe(0);
     expect(linted.output).toContain("design(branded-ids)");
     expect(linted.output).toContain("\"CardId\" is a bare string");

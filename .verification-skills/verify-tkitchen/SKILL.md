@@ -5,7 +5,7 @@ description: Drive the tkitchen CLI (round, notices, notices --history, serve, e
 
 # Verify tkitchen
 
-tkitchen is a Node CLI (`src/cli/tkitchen.ts`, no build step). A user touches it in four ways: `tkitchen round` and `tkitchen serve` read git remotes and write `~/.tkitchen/kitchen.db`; `tkitchen notices` and `tkitchen export` read that store; `deploy/windows/*.ps1` register the sign-in task. Everything here drives that real CLI against real git. The only stand-in is `gh`. A fake `gh` on `PATH` returns the PR list from a JSON file. That is the production boundary: the kitchen only ever runs `gh pr list --json ...`.
+tkitchen is a Node CLI (`cli/tkitchen.ts`, no build step). A user touches it in four ways: `tkitchen round` and `tkitchen serve` read git remotes and write `~/.tkitchen/kitchen.db`; `tkitchen notices` and `tkitchen export` read that store; `deploy/windows/*.ps1` register the sign-in task. Everything here drives that real CLI against real git. The only stand-in is `gh`. A fake `gh` on `PATH` returns the PR list from a JSON file. That is the production boundary: the kitchen only ever runs `gh pr list --json ...`.
 
 ## Launch
 

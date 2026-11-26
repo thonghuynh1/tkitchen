@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "bin": {
-    "tkitchen": "src/cli/tkitchen.ts"
+    "tkitchen": "cli/tkitchen.ts"
   },
   "engines": {
     "node": ">=22.19.0"
@@ -16,7 +16,7 @@
     "typecheck": "tsgo --noEmit",
     "verify:structure": "node scripts/check-module-structure.mjs",
     "verify": "npm run lint && npm run lint:guard && npm run typecheck && npm run seams && npm run verify:structure && npm test && npm run test:sim --if-present",
-    "seams": "depcruise src tests scripts --config .dependency-cruiser.cjs",
+    "seams": "depcruise modules cli index.ts tests scripts --config .dependency-cruiser.cjs",
     "lint:baseline": "node scripts/lint-ratchet.ts --write",
     "lint:guard": "node scripts/lint-config-guard.ts"
   },

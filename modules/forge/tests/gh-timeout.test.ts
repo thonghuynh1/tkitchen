@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { createGhRunner } from "../adapters.ts";
 import { PortError } from "../../platform/index.ts";
 
-const FAKE_GH_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "tests", "fixtures", "fake-gh");
+const FAKE_GH_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "tests", "fixtures", "fake-gh");
 
 function alive(pid: number): boolean {
   try { process.kill(pid, 0); return true; } catch { return false; }

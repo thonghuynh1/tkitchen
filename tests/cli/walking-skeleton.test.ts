@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { git, cli } from "../helpers.ts";
-import { GitRepoImpl } from "../../src/modules/git/adapters.ts";
-import type { GitRunResult } from "../../src/modules/git/adapters.ts";
+import { GitRepoImpl } from "../../modules/git/adapters.ts";
+import type { GitRunResult } from "../../modules/git/adapters.ts";
 
 interface Fixture { root: string; home: string; origin: string; work: string; work2: string; dbPath: string; }
 

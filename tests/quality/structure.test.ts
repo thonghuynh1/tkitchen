@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { inspect } from "../../scripts/check-module-structure.mjs";
 
-const LIB = "src/modules/rounds/lib/x.ts";
+const LIB = "modules/rounds/lib/x.ts";
 
 describe("env rule", () => {
   it("Date.now in a lib fails naming the Clock port", () => {
@@ -14,7 +14,7 @@ describe("env rule", () => {
     expect(errors[0]).toContain("Clock");
   });
   it("Date.now in an adapter passes", () => {
-    expect(inspect({ "src/modules/platform/lib/adapters/env.ts": "export const t = Date.now();\n" })).toHaveLength(0);
+    expect(inspect({ "modules/platform/lib/adapters/env.ts": "export const t = Date.now();\n" })).toHaveLength(0);
   });
   it("Math.random in a lib fails", () => {
     expect(inspect({ [LIB]: "export const t = Math.random();\n" })).toHaveLength(1);
@@ -28,7 +28,7 @@ describe("env rule", () => {
     }
   });
   it("a module's own tests are not production code", () => {
-    expect(inspect({ "src/modules/lock/tests/x.test.ts": "export const t = Date.now();\n" })).toHaveLength(0);
+    expect(inspect({ "modules/lock/tests/x.test.ts": "export const t = Date.now();\n" })).toHaveLength(0);
   });
   it("new Date with arguments passes", () => {
     expect(inspect({ [LIB]: "export const t = new Date(0);\n" })).toHaveLength(0);
@@ -39,9 +39,9 @@ describe("structure CLI", () => {
     const root = mkdtempSync(join(tmpdir(), "tkitchen-structure-"));
     try {
       mkdirSync(join(root, "scripts"), { recursive: true });
-      mkdirSync(join(root, "src", "modules", "rounds", "lib"), { recursive: true });
+      mkdirSync(join(root, "modules", "rounds", "lib"), { recursive: true });
       copyFileSync(join(process.cwd(), "scripts", "check-module-structure.mjs"), join(root, "scripts", "check-module-structure.mjs"));
-      writeFileSync(join(root, "src", "modules", "rounds", "lib", "x.ts"), "export const t = Date.now();\n");
+      writeFileSync(join(root, "modules", "rounds", "lib", "x.ts"), "export const t = Date.now();\n");
       let status = 0;
       let output = "";
       try {

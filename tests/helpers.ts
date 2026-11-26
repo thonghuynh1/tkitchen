@@ -12,7 +12,7 @@ export async function cli(home: string, ...args: string[]): Promise<{ stdout: st
   try {
     const env: Record<string, string | undefined> = { ...process.env, TKITCHEN_HOME: home, PATH: FAKE_GH_DIR + delimiter + (process.env["PATH"] ?? "") };
     env["FAKE_GH_PRS_FILE"] = env["FAKE_GH_PRS_FILE"] ?? join(FAKE_GH_DIR, "prs.json");
-    const r = await run("node", ["src/cli/tkitchen.ts", ...args], { cwd: process.cwd(), env });
+    const r = await run("node", ["cli/tkitchen.ts", ...args], { cwd: process.cwd(), env });
     return { stdout: r.stdout.toString(), stderr: r.stderr.toString(), code: 0 };
   } catch (e) {
     const err = e as { stdout?: unknown; stderr?: unknown; code?: unknown };

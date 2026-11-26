@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { defaultGitRunner } from "../../src/modules/git/adapters.ts";
+import { defaultGitRunner } from "../../modules/git/adapters.ts";
 import { checkDeterminism } from "./world/determinism.ts";
 import { SimWorld } from "./world/world.ts";
 import { runSeed } from "./runner/loop.ts";

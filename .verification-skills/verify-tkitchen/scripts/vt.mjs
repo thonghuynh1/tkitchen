@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FAKE_GH_DIR = join(REPO, "tests", "fixtures", "fake-gh");
-const CLI = join(REPO, "src", "cli", "tkitchen.ts");
+const CLI = join(REPO, "cli", "tkitchen.ts");
 
 function die(msg) { console.error(msg); process.exit(2); }
 function paths(run) {

@@ -1,4 +1,4 @@
-# Phase 9: Board verb and health route
+# Phase 10: Board verb and health route
 
 [Overview](overview.md)
 
@@ -8,9 +8,9 @@
 
 ## Changes
 
-- `src/modules/board-http/` (new module): `index.ts` exports `startBoardServer(options): Promise<BoardServer>`. `lib/adapters/server.ts` uses `node:http` to serve `dist/web` and answer `GET /v1/health` with `{ ok: true }`. No framework yet; ticket 01 may choose one and record an ADR.
-- `src/cli/tkitchen.ts`: a `board` verb with `--port` (default 3000) and `--host` (default `127.0.0.1`, since exposure is K-expose and still open). It prints the URL and stops cleanly on Ctrl-C.
-- `src/modules/board-http/tests/health.test.ts`: start on port 0, then `GET /v1/health` returns 200 `{ ok: true }` and `GET /` returns the page's HTML.
+- `modules/board-http/` (new module): `index.ts` exports `startBoardServer(options): Promise<BoardServer>`. `lib/adapters/server.ts` uses `node:http` to serve `dist/web` and answer `GET /v1/health` with `{ ok: true }`. No framework yet; ticket 01 may choose one and record an ADR.
+- `cli/tkitchen.ts`: a `board` verb with `--port` (default 3000) and `--host` (default `127.0.0.1`, since exposure is K-expose and still open). It prints the URL and stops cleanly on Ctrl-C.
+- `modules/board-http/tests/health.test.ts`: start on port 0, then `GET /v1/health` returns 200 `{ ok: true }` and `GET /` returns the page's HTML.
 - `.verification-skills/verify-tkitchen`: one new journey that starts `tkitchen board`, checks health and stops it (`maintain-verification-skill`).
 - `.scratch/waiter-board/map.md`: tickets 01 to 03 now build modules on this skeleton (`identities`, `cards`, `chat`, `live`, `waiter`).
 

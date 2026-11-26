@@ -4,7 +4,7 @@ const CONTEXT_FILE = new URL("../../CONTEXT.md", import.meta.url);
 const TERM_LINE = /^\*\*(.+?)\*\*:\s*$/;
 const AVOID_LINE = /^_Avoid_:\s*(.+)$/;
 const ID_NAME = /(^id|Id)$/;
-const MODULE_ENTRY = /[\\/]src[\\/]modules[\\/][^\\/]+[\\/](index|adapters)\.ts$/;
+const MODULE_ENTRY = /[\\/]modules[\\/][^\\/]+[\\/](index|adapters)\.ts$/;
 const BARE_ID_TYPES = new Set(["TSStringKeyword", "TSNumberKeyword"]);
 const FUNCTION_TYPES = new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression", "TSDeclareFunction", "TSMethodSignature", "TSFunctionType"]);
 

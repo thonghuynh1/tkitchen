@@ -4,7 +4,7 @@ tkitchen (the kitchen, named to sit beside tstack) takes orders (Triggers) from 
 
 The kitchen's part of that plan is in `.scratch/tkitchen-v1/plan.md`; read it before designing or building anything here.
 
-tkitchen also hosts the waiter board (`.scratch/waiter-board/map.md`): a local kanban where each card is a chat thread and `@waiter` becomes one Trigger. It grows as more modules under `src/modules/`.
+tkitchen also hosts the waiter board (`.scratch/waiter-board/map.md`): a local kanban where each card is a chat thread and `@waiter` becomes one Trigger. It grows as more modules under `modules/`.
 
 ## Code layout and checks
 

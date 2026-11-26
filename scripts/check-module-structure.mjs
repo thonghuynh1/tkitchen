@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 export const MAX_MODULE_LINES = 800;
 
 const SOURCE_FILE = /\.ts$/;
-const MODULE_TESTS = /^src\/modules\/[^/]+\/tests\//;
-const ADAPTERS = /^src\/modules\/[^/]+\/lib\/adapters\//;
+const MODULE_TESTS = /^modules\/[^/]+\/tests\//;
+const ADAPTERS = /^modules\/[^/]+\/lib\/adapters\//;
 const ENV_PATTERNS = [
   { pattern: /Date\.now\(/g, label: "Date.now()" },
   { pattern: /new Date\(\s*\)/g, label: "new Date()" },
@@ -58,7 +58,9 @@ function collect(root, base, files) {
 
 export function checkModuleStructure(root) {
   const files = {};
-  collect(root, "src", files);
+  collect(root, "modules", files);
+  collect(root, "cli", files);
+  if (existsSync(join(root, "index.ts"))) files["index.ts"] = readFileSync(join(root, "index.ts"), "utf8");
   return { errors: inspect(files), count: Object.keys(files).filter((path) => !MODULE_TESTS.test(path)).length };
 }
 

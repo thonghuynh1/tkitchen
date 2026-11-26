@@ -67,7 +67,7 @@ describe.skipIf(!onWindows)("deploy/windows scheduled task", () => {
     expect(element(xml, "LogonType")).toBe("InteractiveToken");
     expect(element(xml, "RunLevel")).toBe("LeastPrivilege");
     expect(element(xml, "Command").endsWith("node.exe")).toBe(true);
-    expect(element(xml, "Arguments").endsWith('src\\cli\\tkitchen.ts" serve')).toBe(true);
+    expect(element(xml, "Arguments").endsWith('cli\\tkitchen.ts" serve')).toBe(true);
     expect(element(xml, "MultipleInstancesPolicy")).toBe("IgnoreNew");
     expect(element(xml, "ExecutionTimeLimit")).toBe("PT0S");
     expect(element(xml, "Interval")).toBe("PT1M");

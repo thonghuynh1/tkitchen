@@ -14,7 +14,8 @@ Included:
 - Move every `src/` file into `src/modules/<module>/`, split `ports.ts` so each module owns its contracts, and point tests at module entries.
 - Replace the regex import checks with dependency-cruiser seams; keep the clock/random rule and the size budget.
 - A lint ratchet, a lint config guard, and a few generic lint rules rewritten in our words.
-- A web skeleton: Vite + React + Tailwind + shadcn/ui under `src/web/`, served by a new `tkitchen board` verb with a health route.
+- Move the kitchen out of `src/` into top-level `modules/` and `cli/` (phase 8, option C), so `src/` holds only the web app.
+- A web skeleton: Vite + React + Tailwind + shadcn/ui under `src/`, served by a new `tkitchen board` verb with a health route.
 - Docs: `docs/MODULES.md`, `AGENTS.md`, `CONTEXT.md`, a first `docs/adr/`.
 
 Excluded:
@@ -41,29 +42,30 @@ The chosen shape keeps tkitchen's best property: domain logic is pure and testab
 
 ## Target layout
 
+Revised 2026-11-26 (option C): `src/` is the web app and the modules sit in a top-level `modules/` folder, matching ts-template's root-level program. Phase 8 makes that move.
+
 ```
-src/
-├── modules/
-│   ├── platform/   Clock, Scheduler, Random, Ids, machineName, kitchenHome   (was infrastructure/env.ts + ports)
-│   ├── triggers/   Trigger, Thread, Disposition, the SQLite kitchen store     (was domain/trigger, domain/disposition, infrastructure/sqlite/store.ts)
-│   ├── branches/   watched branches and Base resolution                       (was domain/branch, domain/base)
-│   ├── notices/    Notice and the notices/history read                         (was domain/notice, application/notices.ts)
-│   ├── rounds/     Round and serve loop                                       (was application/round.ts, application/serve.ts)
-│   ├── export/     export lines and the read-only export store               (was application/export.ts, infrastructure/sqlite/export-store.ts)
-│   ├── git/        GitRepo contract and the git runner                        (was infrastructure/git)
-│   ├── forge/      Forge contract, NoForge, GitHub forge                      (was infrastructure/forges.ts, infrastructure/github)
-│   ├── config/     Config contract and the config file                        (was infrastructure/config-file.ts)
-│   ├── lock/       Lock contract and the lock file                            (was infrastructure/lock-file.ts)
-│   └── <module>/
+modules/
+├── platform/   Clock, Scheduler, Random, Ids, machineName, kitchenHome   (was infrastructure/env.ts + ports)
+├── triggers/   Trigger, Thread, Disposition, the SQLite kitchen store     (was domain/trigger, domain/disposition, infrastructure/sqlite/store.ts)
+├── branches/   watched branches and Base resolution                       (was domain/branch, domain/base)
+├── notices/    Notice and the notices/history read                         (was domain/notice, application/notices.ts)
+├── rounds/     Round and serve loop                                       (was application/round.ts, application/serve.ts)
+├── export/     export lines and the read-only export store               (was application/export.ts, infrastructure/sqlite/export-store.ts)
+├── git/        GitRepo contract and the git runner                        (was infrastructure/git)
+├── forge/      Forge contract, NoForge, GitHub forge                      (was infrastructure/forges.ts, infrastructure/github)
+├── config/     Config contract and the config file                        (was infrastructure/config-file.ts)
+├── lock/       Lock contract and the lock file                            (was infrastructure/lock-file.ts)
+└── <module>/
 │       ├── index.ts        pure entry: contracts and pure operations; any module may import it
-│       ├── adapters.ts     Node entry: the implementations; only src/cli, src/index.ts, other adapters and tests import it
+│       ├── adapters.ts     Node entry: the implementations; only cli/, the root index.ts, other adapters and tests import it
 │       ├── web.ts          browser-safe entry, only when the module has one
 │       ├── lib/            pure internals; lib/contract.ts holds the module's contracts
 │       ├── lib/adapters/   the only internals that touch node:*, fs, processes, sockets
 │       └── tests/          private unit tests, importing ../index.ts only
-├── web/            the React app; shadcn components in src/web/components/ui
-├── cli/tkitchen.ts composition root (path kept for the installer and verify-tkitchen)
-└── index.ts        package entry, re-exports module entries only
+src/                the React web app; shadcn components in src/components/ui
+cli/tkitchen.ts     composition root (path recorded in the installer and verify-tkitchen)
+index.ts            package entry, re-exports module entries only
 tests/              cross-cutting suites: cli, sim, contract, quality, deploy; module entries only
 ```
 
@@ -87,8 +89,9 @@ Board modules arrive later, from waiter-board tickets: `identities` (GitHub sign
 5. [Lint ratchet](phase-5-ratchet.md)
 6. [Lint config guard](phase-6-guard.md)
 7. [Generic lint rules and docs](phase-7-rules-docs.md)
-8. [Web skeleton with shadcn](phase-8-web.md)
-9. [Board verb and health route](phase-9-board-verb.md)
+8. [Move the kitchen out of src](phase-8-move-out-of-src.md)
+9. [Web skeleton with shadcn](phase-9-web.md)
+10. [Board verb and health route](phase-10-board-verb.md)
 
 ## Verification
 

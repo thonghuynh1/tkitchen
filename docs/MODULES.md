@@ -1,18 +1,19 @@
 # Modules
 
-tkitchen's code lives in vertical modules under `src/modules/<module>/`. Each module owns one part of the kitchen: its contracts, its pure logic, its Node code and its unit tests. The waiter board grows here too, as more modules. Why this shape: [ADR 0001](adr/0001-vertical-modules.md).
+tkitchen's code lives in vertical modules under `modules/<module>/`. Each module owns one part of the kitchen: its contracts, its pure logic, its Node code and its unit tests. The waiter board grows here too, as more modules. `src/` is reserved for the board's web app. Why this shape: [ADR 0001](adr/0001-vertical-modules.md) and [ADR 0003](adr/0003-src-is-the-web-app.md).
 
 ## Layout
 
 ```
-src/modules/<module>/
+modules/<module>/
 ├── index.ts        pure entry: contracts and pure operations; any code may import it
 ├── adapters.ts     Node entry: the implementations of the contracts
 ├── lib/            pure internals; lib/contract.ts holds the module's contracts
 ├── lib/adapters/   the only internals that touch node:*, the file system, processes or the clock
 └── tests/          the module's unit tests
-src/cli/tkitchen.ts composition root: wires adapters to contracts
-src/index.ts        package entry: re-exports module entries only
+cli/tkitchen.ts     composition root: wires adapters to contracts
+index.ts            package entry: re-exports module entries only
+src/                the waiter board web app (phase 9)
 tests/              cross-module suites: cli, sim, contract, quality, deploy
 ```
 
@@ -21,10 +22,10 @@ Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen ho
 ## Rules
 
 - **Entries only.** Code outside a module reaches it through `index.ts` or `adapters.ts`, never through `lib/` or `tests/`. A module's own tests use its entries too.
-- **Pure lib.** A module's `lib/` outside `lib/adapters/` imports no Node built-in except `node:crypto` (deterministic hashing), and never imports `lib/adapters/`, any `adapters.ts` or `src/cli/`. It reaches the outside world through contracts that the CLI fills with adapters. This keeps the logic runnable in the sim.
+- **Pure lib.** A module's `lib/` outside `lib/adapters/` imports no Node built-in except `node:crypto` (deterministic hashing), and never imports `lib/adapters/`, any `adapters.ts` or `cli/`. It reaches the outside world through contracts that the CLI fills with adapters. This keeps the logic runnable in the sim.
 - **Pure index.** `index.ts` exports nothing from `lib/adapters/`. Node code goes behind `adapters.ts`, so importing a module's contracts never loads `node:sqlite` or a child process.
 - **No clock or randomness outside adapters.** Outside `lib/adapters/`, code does not call `Date.now()`, `new Date()` with no arguments, `setTimeout`, `setInterval`, `Math.random()` or `randomUUID()`; it uses the Clock, Scheduler, Random and Ids contracts from platform.
-- **800 lines per file** under `src/`. Split an over-budget file along its seams.
+- **800 lines per file** under `modules/` and `cli/`. Split an over-budget file along its seams.
 - **No cycles, no undeclared or unresolvable imports.**
 
 ## Checks
@@ -63,7 +64,7 @@ All four apply to every file, tests included. Their violations on 2026-11-26 sit
 
 ## Adding a module
 
-Create `src/modules/<name>/` with `lib/contract.ts`, `lib/`, `index.ts`, and `adapters.ts` plus `lib/adapters/` if it needs Node. Export it from `src/index.ts`. Wire its adapters in `src/cli/tkitchen.ts`. Put its unit tests in `tests/`. Add a term to `CONTEXT.md` when it names a new concept.
+Create `modules/<name>/` with `lib/contract.ts`, `lib/`, `index.ts`, and `adapters.ts` plus `lib/adapters/` if it needs Node. Export it from the root `index.ts`. Wire its adapters in `cli/tkitchen.ts`. Put its unit tests in its own `tests/`. Add a term to `CONTEXT.md` when it names a new concept.
 
 ## Lint backend
 

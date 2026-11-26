@@ -12,75 +12,75 @@
   "scripts/oxlint/design-rules.js": {
     "design/context-terms": 1
   },
-  "src/cli/tkitchen.ts": {
+  "cli/tkitchen.ts": {
     "design/context-terms": 5
   },
-  "src/modules/branches/lib/base.ts": {
+  "modules/branches/lib/base.ts": {
     "design/context-terms": 4
   },
-  "src/modules/branches/lib/branch.ts": {
+  "modules/branches/lib/branch.ts": {
     "design/context-terms": 1
   },
-  "src/modules/config/lib/adapters/config-file.ts": {
+  "modules/config/lib/adapters/config-file.ts": {
     "design/context-terms": 1
   },
-  "src/modules/export/lib/adapters/export-store.ts": {
+  "modules/export/lib/adapters/export-store.ts": {
     "design/context-terms": 1,
     "design/no-unsafe-as": 2
   },
-  "src/modules/export/lib/export.ts": {
+  "modules/export/lib/export.ts": {
     "design/context-terms": 3,
     "design/no-unsafe-as": 1
   },
-  "src/modules/forge/lib/adapters/github-forge.ts": {
+  "modules/forge/lib/adapters/github-forge.ts": {
     "design/context-terms": 1
   },
-  "src/modules/git/lib/adapters/git-repo.ts": {
+  "modules/git/lib/adapters/git-repo.ts": {
     "design/context-terms": 1
   },
-  "src/modules/git/tests/git-timeout.test.ts": {
+  "modules/git/tests/git-timeout.test.ts": {
     "design/context-terms": 1,
     "design/no-unsafe-as": 1
   },
-  "src/modules/lock/lib/adapters/lock-file.ts": {
+  "modules/lock/lib/adapters/lock-file.ts": {
     "design/context-terms": 5
   },
-  "src/modules/lock/tests/fixtures/lock-contender.mjs": {
+  "modules/lock/tests/fixtures/lock-contender.mjs": {
     "design/context-terms": 1
   },
-  "src/modules/lock/tests/fixtures/lock-schedule-worker.mjs": {
+  "modules/lock/tests/fixtures/lock-schedule-worker.mjs": {
     "design/context-terms": 1
   },
-  "src/modules/lock/tests/lock-file.test.ts": {
+  "modules/lock/tests/lock-file.test.ts": {
     "design/context-terms": 19,
     "design/no-unsafe-as": 7
   },
-  "src/modules/notices/lib/notice.ts": {
+  "modules/notices/lib/notice.ts": {
     "design/context-terms": 1
   },
-  "src/modules/notices/lib/notices.ts": {
+  "modules/notices/lib/notices.ts": {
     "design/context-terms": 7
   },
-  "src/modules/platform/lib/contract.ts": {
+  "modules/platform/lib/contract.ts": {
     "design/context-terms": 1
   },
-  "src/modules/rounds/lib/round.ts": {
+  "modules/rounds/lib/round.ts": {
     "design/context-terms": 11
   },
-  "src/modules/rounds/lib/serve.ts": {
+  "modules/rounds/lib/serve.ts": {
     "design/context-terms": 1
   },
-  "src/modules/triggers/lib/adapters/store.ts": {
+  "modules/triggers/lib/adapters/store.ts": {
     "design/context-terms": 6,
     "design/no-unsafe-as": 1
   },
-  "src/modules/triggers/lib/contract.ts": {
+  "modules/triggers/lib/contract.ts": {
     "design/context-terms": 2
   },
-  "src/modules/triggers/lib/disposition.ts": {
+  "modules/triggers/lib/disposition.ts": {
     "design/context-terms": 2
   },
-  "src/modules/triggers/lib/trigger.ts": {
+  "modules/triggers/lib/trigger.ts": {
     "design/context-terms": 1
   },
   "tests/cli/export.test.ts": {
