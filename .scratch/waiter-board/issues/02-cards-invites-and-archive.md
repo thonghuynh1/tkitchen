@@ -91,3 +91,11 @@ Build `modules/cards/` (cards, `Todo / Doing / Done` columns, per-card membershi
 ## Blocked by
 
 - Local: `01-identities-and-oauth.md`
+
+## Comments
+
+- **QA-02: verdict fail** at `6a725b146e46571c6290a32209fa67e28c6379d8`. The full repo gate and all nine focused tests passed, but the real CLI showed a D5/INV-001 violation: after a host-owner change, the new host owner could move a card they did not belong to. The request returned 200 rather than 403, returned the card summary, and changed the stored column.
+- Review evidence: `F:/MyWork/tkitchen/.verification-evidence/verify-tkitchen/qa-02-6a725b1/review.md`.
+
+- **QA-02 re-review: verdict pass** at `7090673f6b51fa3eea6002a3ee77539cdbc8dae2`. After a host-owner change, the real CLI returned 403 to the replacement owner without card membership and left the SQLite snapshot unchanged. The original owner could still move the card as a member. The full gate and all 11 focused tests passed.
+- Re-review evidence: `F:/MyWork/tkitchen/.verification-evidence/verify-tkitchen/qa-02-7090673/review.md`.

@@ -75,3 +75,17 @@ Build the React 19 + shadcn/ui waiter board web app in `src/` (importing module 
 ## Blocked by
 
 - Local: `03-card-chat-and-live-sse.md`
+
+## Independent QA
+
+- `verdict: fail` at `50e17ff1b3d9a3b35f92151fa70ca602e5c23ea0`.
+- The build, browser seams, full gate, two checked-in Chromium tests, and six board CLI journey checks passed.
+- An independent Chromium probe reproduced two blockers: the owner cannot immediately remove an idle new invitee from the existing board, and switching cards carries an unsent draft into the destination card where Send can publish it.
+- [Evidence and replay](../../../.verification-evidence/verify-tkitchen/qa-05-50e17ff/review.md).
+
+## Independent QA re-review
+
+- `verdict: pass` at `4c99d537c753b26bcd0d90ba3d1c18cfcbff8d10`.
+- Independent Chromium replay confirmed that a draft cannot cross card boundaries and that the owner can remove an idle new invitee without refreshing. The invitee's card disappeared and open chat closed with a notice.
+- Browser build and seams, all three focused Chromium tests, the full repository gate, and all six board journey checks passed.
+- [Re-review evidence and replay](../../../.verification-evidence/verify-tkitchen/qa-05-4c99d53/review.md).
