@@ -3,9 +3,11 @@ import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { resolve, sep } from "node:path";
+import type { CardService } from "../../../cards/index.ts";
 import { contentTypeFor } from "../content-types.ts";
 import { isAuthPath, routeAuth } from "./auth-routes.ts";
 import type { AuthContext } from "./auth-routes.ts";
+import { isCardsPath, routeCards } from "./card-routes.ts";
 import type { BoardServer, BoardServerOptions } from "../contract.ts";
 
 const HEALTH_PATH = "/v1/health";
@@ -37,12 +39,17 @@ async function fileToServe(webRoot: string, pathname: string): Promise<string | 
 async function respond(
   webRoot: string,
   auth: AuthContext | null,
+  cards: CardService | null,
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
   const url = new URL(req.url ?? "/", "http://board");
   if (isAuthPath(url.pathname)) {
     await routeAuth(auth, req, res, url);
+    return;
+  }
+  if (isCardsPath(url.pathname)) {
+    await routeCards(auth, cards, req, res, url);
     return;
   }
   if (req.method !== "GET") {
@@ -66,8 +73,9 @@ export function startBoardServer(options: BoardServerOptions): Promise<BoardServ
   const webRoot = resolve(options.webRoot);
   const auth: AuthContext | null =
     options.identities === undefined ? null : { identities: options.identities, publicUrl: options.publicUrl ?? "" };
+  const cards: CardService | null = options.cards ?? null;
   const server = createServer((req, res) => {
-    respond(webRoot, auth, req, res).catch((error: unknown) => {
+    respond(webRoot, auth, cards, req, res).catch((error: unknown) => {
       if (!res.headersSent) res.writeHead(STATUS_INTERNAL, { "content-type": "application/json" });
       res.end(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : "request failed" }));
     });

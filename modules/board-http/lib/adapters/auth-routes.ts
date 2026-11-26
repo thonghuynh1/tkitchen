@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { safeReturnTo } from "../../../identities/index.ts";
-import type { IdentityService } from "../../../identities/index.ts";
+import type { IdentityService, Viewer } from "../../../identities/index.ts";
 import type { MeResponse } from "../../../identities/web.ts";
 import { clearedCookie, parseCookies, serializeCookie } from "../cookies.ts";
 
@@ -53,6 +53,10 @@ function redirectUri(context: AuthContext): string {
 
 function sessionToken(req: IncomingMessage): string | undefined {
   return parseCookies(req.headers.cookie).get(SESSION_COOKIE);
+}
+
+export function viewerFromRequest(context: AuthContext, req: IncomingMessage): Viewer | null {
+  return context.identities.viewer(sessionToken(req));
 }
 
 function startSignIn(context: AuthContext, url: URL, res: ServerResponse): void {

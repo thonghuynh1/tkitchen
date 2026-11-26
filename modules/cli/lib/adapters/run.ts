@@ -17,6 +17,8 @@ import { getNotices, formatNotices, getHistory, formatHistory } from "../../../n
 import { exportLines, serializeExportLines, InvalidCursorError } from "../../../export/index.ts";
 import { ReadOnlyExportStore } from "../../../export/adapters.ts";
 import { startBoardServer } from "../../../board-http/adapters.ts";
+import { CardService } from "../../../cards/index.ts";
+import { SqliteCardStore } from "../../../cards/adapters.ts";
 import { IdentityService, normalizeOwnerId } from "../../../identities/index.ts";
 import { LiveGitHubOAuth, SqliteIdentityStore } from "../../../identities/adapters.ts";
 import { normalizePublicUrl, parseCommand, USAGE } from "../parse.ts";
@@ -143,7 +145,12 @@ async function runBoard(port: number, host: string, publicUrlWord: string | unde
     console.error(signIn.complaint);
     return EXIT_USAGE;
   }
-  const board = await startBoardServer({ port, host, webRoot, publicUrl, identities: signIn.identities });
+  const cardStore = signIn.identities === undefined ? undefined : new SqliteCardStore(join(kitchenHome(), "board.db"));
+  const cards =
+    cardStore === undefined
+      ? undefined
+      : new CardService({ store: cardStore, clock: new SystemClock(), ids: new SystemIds() });
+  const board = await startBoardServer({ port, host, webRoot, publicUrl, identities: signIn.identities, cards });
   console.log("board at " + board.url);
   if (signIn.identities !== undefined) console.log("sign-in via " + board.publicUrl);
   await new Promise<void>((resolveStop) => {
@@ -156,6 +163,7 @@ async function runBoard(port: number, host: string, publicUrlWord: string | unde
     process.on("SIGTERM", onSignal);
   });
   await board.close();
+  cardStore?.close();
   signIn.store?.close();
   return 0;
 }

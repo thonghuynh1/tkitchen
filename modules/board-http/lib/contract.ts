@@ -1,3 +1,4 @@
+import type { CardService } from "../../cards/index.ts";
 import type { IdentityService } from "../../identities/index.ts";
 
 export interface BoardServerOptions {
@@ -6,6 +7,7 @@ export interface BoardServerOptions {
   webRoot: string;
   publicUrl?: string | undefined;
   identities?: IdentityService | undefined;
+  cards?: CardService | undefined;
 }
 
 export interface BoardServer {
