@@ -1,0 +1,6 @@
+PASS empty store: header + end events:0 :: header,end 0
+PASS full export: header, 3 events seq 1-3, end :: header,1,2,3,end reset=false schema=tkitchen.export/1 n=3
+PASS no per-machine keys exported :: 0
+PASS resume after cursor: only seq 4 :: 4 reset=false
+PASS changed id cursor is a reset from seq 1 :: true first=1
+PASS bad cursor exits 2 with empty stdout :: 2:

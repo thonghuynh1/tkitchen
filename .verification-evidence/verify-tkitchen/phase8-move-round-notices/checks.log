@@ -1,0 +1,22 @@
+PASS baseline round exits 0 :: 0
+PASS baseline: B and D behind 1 (explicit), nothing for A/F :: B:behind:1:explicit,D:behind:1:explicit
+PASS baseline writes no Trigger :: [{"c":0}]
+PASS round after push exits 0 :: 0
+PASS round leaves origin refs unchanged :: refs/heads/A 3879a58ffba2a9bfb69b99f4c08dddf8ae839b57
+refs/heads/B 6838f9d1a4464445f76e1bb6b5c8b37e672d6879
+refs/heads/C 63e166646f28a12048d7aaa5f92cbf14ada8c04b
+refs/heads/D d153d33beafa9ae85483a7aa2ebedeef9b6f669e
+refs/heads/F 3ebd8473974640d3fb5863cb79714a55f3e18001
+refs/heads/main a5ca302e5dfcf16ca2135a190ee1048caae26495
+PASS push to C: B and D behind 2 :: B:behind:2,D:behind:2
+PASS one Base moved Trigger with threads B,D :: 1 ["git:x:B","git:x:D"]
+PASS notice lastEventId is that Trigger :: 5b6ad48e4e9949ce19a3bb3e854ece539644030ebe12c0ce619247432ec107a1
+PASS two Dispositions :: [{"c":2}]
+PASS quiet rerun adds no rows :: [{"e":1,"d":2}]
+PASS B catches up: notice closed :: D
+PASS B branch_state up_to_date :: [{"status":"up_to_date"}]
+PASS human notices line :: x D behind base=C behindBy=2
+PASS rounds[].lastError null :: null
+PASS --help lists commands :: 4
+PASS bad config path exits 2 :: 2
+PASS bad config names repos[0].path :: 1

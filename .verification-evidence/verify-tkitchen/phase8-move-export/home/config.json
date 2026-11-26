@@ -1,0 +1,12 @@
+{
+  "repos": [
+    {
+      "name": "x",
+      "path": "C:\\Hackathon\\tkitchen\\.verification-evidence\\verify-tkitchen\\phase8-move-export\\dev",
+      "bases": {
+        "C": "main",
+        "B": "C"
+      }
+    }
+  ]
+}

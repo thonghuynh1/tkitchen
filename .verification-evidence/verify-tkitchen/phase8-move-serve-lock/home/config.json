@@ -1,0 +1,13 @@
+{
+  "repos": [
+    {
+      "name": "x",
+      "path": "C:\\Hackathon\\tkitchen\\.verification-evidence\\verify-tkitchen\\phase8-move-serve-lock\\dev",
+      "bases": {
+        "C": "main",
+        "B": "C"
+      }
+    }
+  ],
+  "roundMinutes": 0.05
+}

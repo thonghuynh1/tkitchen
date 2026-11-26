@@ -1,0 +1,77 @@
+# world created 2026-11-26T04:39:18.468Z repo=C:\Hackathon\tkitchen head=21a23211595f6aafc35460375dd3c836b15ee127
+$ doctor
+ok node>=22.19: 22.22.1
+ok git: git version 2.56.1.windows.1
+ok deps installed: C:\Hackathon\tkitchen\node_modules
+ok world exists: C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase8-move-serve-lock
+ok home isolated: C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase8-move-serve-lock\home
+ok fake gh first on PATH: []
+ok lock: absent
+$ [dev] branch C from main -> b6ce84e
+$ [dev] branch B from C -> 65d8dc4
+$ bases {"C":"main","B":"C"}
+$ serve-start pid=39184 (output discarded; see C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase8-move-serve-lock\serve.log not written)
+$ tkitchen serve
+[stderr]
+(node:39384) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+already running (pid 39184)
+[exit 1]
+$ tkitchen round
+[stderr]
+(node:20272) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+already running (pid 39184)
+[exit 1]
+$ tkitchen round --force
+[stderr]
+unknown argument: --force
+(node:44232) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 2]
+$ tkitchen notices --json
+{"notices":[],"rounds":[]}
+[stderr]
+(node:38872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:39:23.053Z","lastError":null}]}
+[stderr]
+(node:37956) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ [mate] commit 1 on C -> 5c3c0dc
+$ tkitchen notices --json
+{"notices":[],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:39:23.053Z","lastError":null}]}
+[stderr]
+(node:45896) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:39:23.053Z","lastError":null}]}
+[stderr]
+(node:44764) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:39:23.053Z","lastError":null}]}
+[stderr]
+(node:1056) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:39:23.053Z","lastError":null}]}
+[stderr]
+(node:38768) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[{"repo":"x","branch":"B","base":"C","evidence":"explicit","status":"behind","behindBy":1,"lastEventId":"5f7e1c6c870cb66510843185a960456f82822c8800b129c00e1c1f49a8f0e256"}],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:39:28.971Z","lastError":null}]}
+[stderr]
+(node:5804) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ cleanup killed serve pid 39184
+$ serve-start pid=36696 (output discarded; see C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase8-move-serve-lock\serve.log not written)
+$ cleanup killed serve pid 36696

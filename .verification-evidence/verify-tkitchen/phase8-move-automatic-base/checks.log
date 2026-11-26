@@ -1,0 +1,7 @@
+PASS baseline exits 0 :: 0
+PASS round exits 0 :: 0
+PASS B behind C via reflog, E via reflog-tip :: B:C:reflog,E:C:reflog-tip
+PASS G from another clone is needs_base :: needs_base:null
+PASS needs_base line carries config hint :: 1
+PASS history: one Trigger, dispositions B,E :: 1 git:x:B,git:x:E
+PASS config base resolves G :: behind:C:explicit

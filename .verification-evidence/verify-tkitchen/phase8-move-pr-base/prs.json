@@ -1,0 +1,1 @@
+[{"number":1,"headRefName":"h","baseRefName":"feature-1","url":"https://example.invalid/pr/1","author":{"login":"mate"},"isCrossRepository":false},{"number":2,"headRefName":"h","baseRefName":"main","url":"https://example.invalid/pr/2","author":{"login":"mate"},"isCrossRepository":false}]

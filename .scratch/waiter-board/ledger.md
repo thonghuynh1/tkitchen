@@ -50,3 +50,78 @@ Size check: open=12 closed=8 waits=[] deliveries=3 modules=2 contract=y trend=+ 
 Size check: open=11 closed=9 waits=[] deliveries=3 modules=2 contract=y trend=-
 Size check: open=11 closed=11 waits=[] deliveries=3 modules=2 contract=y trend=- (D9 borrow cookout patterns, D10 own shadcn UI)
 Size check: open=10 closed=13 waits=[] deliveries=3 modules=1 contract=y trend=- (D11 build in tkitchen, K-name closed)
+
+## Ticket 01: Board and card chat (started 2026-11-26)
+
+Decisions:
+- D12 accepted (user, 2026-11-26; closes K-expose): `tkitchen board` stays tunnel-agnostic and listens locally (`127.0.0.1:<port>`), taking `--public-url <url>` (or config/env `publicUrl`, defaulting to the local bind URL). OAuth callback URL, invite links, and `Secure` cookie flag derive from `publicUrl`. Home PC exposes a dedicated subdomain (`board.<domain>`, no Cloudflare Access in front so friends can use GitHub OAuth) via a Cloudflare Named Tunnel (free tier: 1 of 1,000 tunnels); work laptop stays localhost-only (`my-home/.scratch/durable-pi/plan.md` L35-36: nothing inbound, no `cloudflared.exe`).
+  Flow: `Alice --HTTPS--> Cloudflare Named Tunnel (board.<domain>) --HTTP--> tkitchen board (127.0.0.1:3000)`
+  Left to implementer: exact env/config key name for `publicUrl` and OAuth client credentials.
+- D13 accepted (user, 2026-11-26; closes K-auth-local): Single host owner (pinned by config/env `ownerGithubId`, keyed as `github:<numeric id>` per D7). Only the host owner may create cards, create/revoke invites, and remove members. Invited GitHub users see only cards they are currently members of (and may chat + move those cards). Signed-in strangers with no memberships see an empty board and get `403` on card creation or non-member cards.
+  Flow: `Owner -> create/invite/remove/chat | Alice (member of Card 1) -> sees Card 1, chat & move | Bob (stranger) -> empty board, 403 on write`
+  Left to implementer: signed cookie vs session table and cookie lifetime (per D7).
+- D14 accepted (user, 2026-11-26; closes K-invite): Each card has at most one active multi-use invite link (open to any GitHub user who has it, no expiry needed because owner controls it explicitly). Owner has **"Close sharing"** which revokes the active invite link, kicks **every** non-owner member from the card, and immediately closes all their open SSE streams (D9 pattern); card disappears from their boards. Owner can also remove an individual member (removes them, closes their SSE stream, and revokes the active invite link so they cannot immediately rejoin with the old link while other members stay). Clicking **"Create invite link"** again generates a brand-new token (old tokens stay permanently dead) so people with the new link can join again.
+  Flow: `Create invite link (token v1, multi-use) -> Alice & Charlie join -> Close sharing -> revoke v1 + kick Alice & Charlie + close streams -> Create invite link (token v2) -> join again`
+  Left to implementer: token length/encoding (cryptographically random via `Random`/`Ids` seam).
+- D15 accepted (user, 2026-11-26; closes K-boardstore): Board data lives in a separate SQLite file `~/.tkitchen/board.db` beside `~/.tkitchen/kitchen.db`. `modules/triggers` and `kitchen.db` (`user_version = 1`) stay completely untouched; new board modules own `board.db` and expose `web.ts` contracts to `src/`.
+  Flow: `~/.tkitchen/kitchen.db (triggers) | ~/.tkitchen/board.db (identities, cards, members, invites, messages)`
+  Left to implementer: exact SQLite table/column DDL and PRAGMA settings (WAL, foreign keys).
+- D16 accepted (user, 2026-11-26; closes K-chat-live): Single per-user SSE stream (`GET /v1/stream`) for both live board updates (`card_created`, `card_moved`, `card_deleted`, `card_removed`) and live card chat (`message_created`), paired with plain HTTP `POST` for sending messages and `GET /v1/cards` + `GET /v1/cards/:id/messages?after=<lastSeq>` catch-up on reconnect. One-level threads (D9: replying to a reply attaches to the parent message); Todo/Doing/Done column moves by any card member or owner (D5). On removal or Close sharing, server immediately writes `card_removed` and ends the removed user's open SSE handle(s) (D9).
+  Flow: `POST /v1/cards/:id/messages -> SQLite (monotonic seq) -> fan-out to member SSE handles | reconnect -> GET ?after=lastSeq | remove -> delete membership + close SSE handle`
+  Left to implementer: SSE heartbeat interval, exact JSON field names on wire events.
+- D17 accepted (user, 2026-11-26; closes K-retention): Messages are kept forever in `board.db` (no auto-expiry). Only the host owner may soft-delete (archive) a card (`archived_at = now`); invited members get `403`. Soft-deleting revokes any active invite link, removes non-owner members, closes their open SSE handles (`card_removed`), and hides the card from all board/chat/invite queries (`404`/`410`). Rows remain in `board.db`; no archive viewer or restore UI in slice 1.
+  Flow: `Owner clicks Delete -> UPDATE cards SET archived_at = now + revoke invite + remove non-owner members + close SSE handles -> card vanishes live, rows kept in board.db`
+  Left to implementer: exact confirmation dialog copy in UI.
+- D18 accepted (user, 2026-11-26; closes K-waiter-placeholder; placeholder for 02-waiter-reaches-the-owner.md): Every saved message carries `{ id: MessageId, cardId: CardId, seq: number, parentId: MessageId | null, authorId: UserId, text: string, mentionsWaiter: boolean, createdAt: string }`. `parseMentionsWaiter(text)` strips fenced/inline code spans and matches `/(^|[^\w])@waiter(?=$|[^\w])/i`. Slice 1 records the flag and does nothing else with it (no Trigger written). The chat composer shows a `@` mention picker (`@waiter`) so users insert it without typos.
+  Flow: `Composer "@" -> pick @waiter -> POST /v1/cards/:id/messages -> parseMentionsWaiter(text) -> saved with mentionsWaiter=true (no-op in slice 1)`
+  Left to implementer: exact mention popover keyboard shortcuts and styling (shadcn).
+
+Invariants:
+- INV-001 (from D13): Only the host owner may create cards; non-members may never read, write, or hold an open live stream for a card. — Harm: strangers on the public URL could write to local SQLite or read private card threads. — Model: `invariants["INV-001"]`
+- INV-002 (from D14): A removed member can never rejoin using an invite link created before or at their removal. — Harm: kicked user clicks their old invite link and immediately re-enters the card. — Model: `invariants["INV-002"]`
+- INV-003 (from D16): A non-member never receives messages posted after removal (neither via SSE nor via catch-up). — Harm: removed user leaks private messages posted after they were kicked. — Model: `invariants["INV-003"]`
+- INV-004 (from D17): A soft-deleted (archived) card has no active invite, no non-owner members, and no open live streams. — Harm: archived card remains reachable via old invite link or keeps streaming to former members. — Model: `invariants["INV-004"]`
+- PRG-001 (from D16): An active member who missed messages during a disconnect can always catch up (or be removed/archived). — Harm: messages posted during a Wi-Fi drop are permanently lost for an active member. — Model: `progress["PRG-001"]`
+
+Open for this ticket (refreshed after D1/D8/D11 superseded Worker/DO/D1):
+(none — ready for handoff)
+
+## Ticket 01 Edges & Proof
+
+Edges (confirmed by user, 2026-11-26):
+- Callers and consumers: only the built web app (`src/` → `dist/web`) calling `modules/board-http` over HTTP/SSE. `tkitchen serve`, `round`, `notices`, and `export` (aiNho) stay untouched in Slice 1. Ticket 02 will later consume `MessageId` + `mentionsWaiter`.
+- Workload: personal projects (D2) — 1 host owner + ~1–5 friends, tens of cards, hundreds–thousands of messages in `board.db`, <10 concurrent SSE tabs.
+- Setup and rollout: home PC runs `tkitchen board --public-url https://board.<domain>` behind a Cloudflare Named Tunnel (no Access policy in front) + GitHub OAuth App (`clientId`, `clientSecret`, `ownerGithubId` via env/config); work laptop & automated tests run localhost-only (`127.0.0.1`) with an injected auth/OAuth seam (no live GitHub needed in tests). No existing `board.db` to migrate.
+
+Deterministic seams (for `model+dst`):
+- `Clock`, `Random`, `Ids`, `Scheduler` from `modules/platform/index.ts` (already exists; enforced by `verify:structure`).
+- `BoardStore` port (SQLite adapter in `board.db` + in-memory DST double).
+- `GitHubOAuthPort` (live HTTPS adapter + fake test/DST adapter).
+- `LiveHub` port (in-process SSE stream registry wrapping `ServerResponse` handles + DST spy/fault double supporting disconnect, drop, reorder, and immediate close on revocation).
+
+DST fault matrix (seeded simulation over pure board modules):
+- Faults: SSE disconnect/drop mid-chat, duplicate invite redeem, concurrent remove-member vs post-message, concurrent Close sharing vs invite redeem, archive-card while streams open, reconnect catch-up after missed messages, server restart (re-opening `board.db`).
+- Oracles: `INV-001` (non-members never hold streams or create cards), `INV-002` (removed member never rejoins with old invite), `INV-003` (no post-removal message leaks via SSE or catch-up), `INV-004` (archived card has no active invite/members/streams), `PRG-001` (active member catches up missed messages on reconnect).
+
+Ticket 01 scope: deliveries=1 modules=5 contract=y (new board modules + HTTP/SSE API + web.ts contracts)
+Size check: open=0 closed=7 waits=[] deliveries=1 modules=5 contract=y trend=- (D18 K-waiter-placeholder accepted)
+Model check (covers D13, D14, D16, D17): states=370 edges=1610 invariants=4 progress=1 violations=0 stuck=0 deadlocks=0 truncated=n (13.11ms)
+Final model check: PASS (370 states, 4 INV, 1 PRG, mutants 5/5, ledger ids all modeled)
+
+## Slice 1 Cutting Gate (2026-11-26)
+
+- **Decision completeness**: PASS
+  - D7, D12, D13, D14, D15, D16, D17, D18: all `contract settled` (no open contracts; only local mechanics left to implementer).
+  - Final model check: `PASS (370 states, 4 INV, 1 PRG, mutants 5/5, ledger ids all modeled)` run after last ledger decision edit.
+  - Deterministic seams settled: `Clock`, `Random`, `Ids`, `Scheduler` (`modules/platform`), `IdentityStore`, `CardStore`, `ChatStore`, `GitHubOAuthPort`, `LiveHub`.
+- **Independence**: PASS (`ALLOW`)
+  - Candidate scope: `modules/identities/`, `modules/cards/`, `modules/chat/`, `modules/live/`, `modules/board-http/`, `modules/cli/`, `index.ts`, `sim/board.sim.ts`, `src/`, `.verification-skills/verify-tkitchen/features/waiter-board.md`.
+  - Pending work checked: `.scratch/waiter-board/issues/` had no prior issues; `.scratch/tkitchen-v1/issues/` are all closed and indicated (`journal.md` present); `kitchen-modules` phases 1–10 and ADRs 0004–0005 are already landed at Base `3bc6f97e7b43348967bc89b9525cceb8f9d935d4`. Zero overlap.
+- **Verdict**: `ALLOW` → verification feature `.verification-skills/verify-tkitchen/features/waiter-board.md` registered; Slice 1 cut into issues `01`–`06`.
+
+### Slice 1 Proof Requirements
+- **D7 / D12 / D13 / D15** (Slice 1, planned): `tkitchen board --public-url` + GitHub OAuth callback + owner check + separate `board.db` → proven by `modules/cli/tests/parse-board.test.ts` & `modules/board-http/tests/auth.test.ts` + HITL smoke (`06-hitl-live-github-and-tunnel-smoke.md`).
+- **D5 / D13 / D14 / D17** (Slice 1, planned): cards, columns, multi-use invites, individual kick revoking invite, Close sharing, soft-delete (`archived_at`) → proven by `modules/board-http/tests/cards.test.ts`.
+- **D9 / D16 / D18** (Slice 1, planned): 1-level threads, `@waiter` parser placeholder, single per-user SSE stream + `?after=<seq>` catch-up + immediate SSE close on removal/Close sharing/archive → proven by `modules/chat/tests/chat.test.ts` & `modules/board-http/tests/live-chat.test.ts`.
+- **Formal & DST (`model+dst`)** (Slice 1, planned): `INV-001`..`INV-004` + `PRG-001` verified in `.scratch/waiter-board/model/model.mjs` (0 violations, 0 deadlocks, 5/5 mutants killed) and enforced step-by-step by `DST_SEEDS=200 npm run test:sim` (`sim/board.sim.ts`) + `cli.js --trace` conformance check.
+- **D10 / D18 UI** (Slice 1, planned): `src/` web app using `modules/*/web.ts` only → proven by `npm run verify`, `modules/board-http/tests/web-e2e.test.ts`, `board.sh`, and HITL smoke on home PC.

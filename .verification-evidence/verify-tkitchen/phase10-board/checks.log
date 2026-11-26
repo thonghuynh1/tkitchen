@@ -1,0 +1,6 @@
+PASS board page is built :: yes
+PASS board prints its URL :: yes
+PASS GET /v1/health answers ok true :: {"ok":true}
+PASS GET / serves the board page :: 1
+PASS the page's script asset loads :: 200
+PASS after cleanup the port is closed :: closed

@@ -1,0 +1,56 @@
+# world created 2026-11-26T04:38:25.301Z repo=C:\Hackathon\tkitchen head=21a23211595f6aafc35460375dd3c836b15ee127
+$ doctor
+ok node>=22.19: 22.22.1
+ok git: git version 2.56.1.windows.1
+ok deps installed: C:\Hackathon\tkitchen\node_modules
+ok world exists: C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase8-move-automatic-base
+ok home isolated: C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase8-move-automatic-base\home
+ok fake gh first on PATH: []
+ok lock: absent
+$ [dev] branch C from main -> 9269807
+$ [dev] branch B from C -> 850ca3c
+$ [dev] branch E at oid 92698076 of C
+$ [mate] branch G from C -> 2eb3630
+$ tkitchen round
+[stderr]
+(node:40928) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ [mate] commit 1 on C -> 7c19dd7
+$ tkitchen round
+[stderr]
+(node:37876) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[{"repo":"x","branch":"B","base":"C","evidence":"reflog","status":"behind","behindBy":1,"lastEventId":"f93187e1bce64fa7ecd01d50e007971c12b056d93f3ca56c3ef169e0da48add8"},{"repo":"x","branch":"E","base":"C","evidence":"reflog-tip","status":"behind","behindBy":1,"lastEventId":"f93187e1bce64fa7ecd01d50e007971c12b056d93f3ca56c3ef169e0da48add8"},{"repo":"x","branch":"G","base":null,"evidence":null,"status":"needs_base","behindBy":null,"lastEventId":null}],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:38:38.361Z","lastError":null}]}
+[stderr]
+(node:4932) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices
+x B behind base=C behindBy=1
+x E behind base=C behindBy=1
+x G needs_base add "bases": { "G": "<base>" } to C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase8-move-automatic-base\home\config.json
+[stderr]
+(node:38440) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json --history
+{"history":[{"event":{"id":"f93187e1bce64fa7ecd01d50e007971c12b056d93f3ca56c3ef169e0da48add8","source":"git","threads":["git:x:B","git:x:E"],"actor":"git","human":false,"addressed":null,"at":"2026-11-26T04:38:38.361Z","text":null,"channel":null,"url":null,"machine":"PRDPF5DFZH6","meta":{"base":"C","oldHead":"92698076af1cbea26c1515a1368d524a50fb8b26","newHead":"7c19dd7cf75bba17d8e4bb55a9b66db81ae63f52"}},"dispositions":[{"eventId":"f93187e1bce64fa7ecd01d50e007971c12b056d93f3ca56c3ef169e0da48add8","thread":"git:x:B","consumer":"notice","filtered":false,"outcome":"behind","outcomeEventId":null,"ruleId":"notice.base-moved","policyVersion":1,"handbacks":[],"at":"2026-11-26T04:38:38.361Z","meta":{"behindBy":1}},{"eventId":"f93187e1bce64fa7ecd01d50e007971c12b056d93f3ca56c3ef169e0da48add8","thread":"git:x:E","consumer":"notice","filtered":false,"outcome":"behind","outcomeEventId":null,"ruleId":"notice.base-moved","policyVersion":1,"handbacks":[],"at":"2026-11-26T04:38:38.361Z","meta":{"behindBy":1}}]}]}
+[stderr]
+(node:28080) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ bases {"G":"C"}
+$ tkitchen round
+[stderr]
+(node:27596) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[{"repo":"x","branch":"B","base":"C","evidence":"reflog","status":"behind","behindBy":1,"lastEventId":"f93187e1bce64fa7ecd01d50e007971c12b056d93f3ca56c3ef169e0da48add8"},{"repo":"x","branch":"E","base":"C","evidence":"reflog-tip","status":"behind","behindBy":1,"lastEventId":"f93187e1bce64fa7ecd01d50e007971c12b056d93f3ca56c3ef169e0da48add8"},{"repo":"x","branch":"G","base":"C","evidence":"explicit","status":"behind","behindBy":1,"lastEventId":null}],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:38:42.448Z","lastError":null}]}
+[stderr]
+(node:29732) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]

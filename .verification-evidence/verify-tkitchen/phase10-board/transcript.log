@@ -1,0 +1,11 @@
+# world created 2026-11-26T06:16:04.416Z repo=C:\Hackathon\tkitchen head=7e1557d1d840a93eb1a3725447189550fd5896d5
+$ doctor
+ok node>=22.19: 22.22.1
+ok git: git version 2.56.1.windows.1
+ok deps installed: C:\Hackathon\tkitchen\node_modules
+ok world exists: C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase10-board
+ok home isolated: C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase10-board\home
+ok fake gh first on PATH: []
+ok lock: absent
+$ board-start pid=30348 (output in board.log)
+$ cleanup killed board pid 30348

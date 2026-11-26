@@ -1,0 +1,11 @@
+PASS baseline exits 0 :: 0
+PASS teammate branch behind via pr :: feature-2:feature-1:pr:1
+PASS retarget without push updates base :: [{"base":"main"}]
+PASS gh failure: round exits 1 :: 1
+PASS gh failure: store unchanged :: [{"e":"8e02bc2612d82b6eaa421c0aca3b431900c8b9de9092b360ed83dae91e12bb4b","d":1,"h":"feature-1=60327cf4b3e8e1baf2bbcbee6f1ed62e0cc414bf,feature-2=aeace29fd699848e1dd3725edfbe85c3f4f8eee9,main=f762afe6e5662b679627d7ec99db442ae228cabc","s":"feature-1=up_to_date=0,feature-2=behind=1"}]
+PASS gh failure: lastError recorded :: true
+PASS next round succeeds :: 0
+PASS next round records the move (2 pushes on feature-1 since branching) :: feature-2:2 err=null
+PASS fork PR adds no base :: needs_base
+PASS config vs PR mismatch is ambiguous :: ambiguous:explicit_pr_mismatch
+PASS two PRs from one head is ambiguous :: ambiguous:multiple_prs

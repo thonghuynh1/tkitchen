@@ -1,0 +1,62 @@
+# world created 2026-11-26T04:39:09.562Z repo=C:\Hackathon\tkitchen head=21a23211595f6aafc35460375dd3c836b15ee127
+$ doctor
+ok node>=22.19: 22.22.1
+ok git: git version 2.56.1.windows.1
+ok deps installed: C:\Hackathon\tkitchen\node_modules
+ok world exists: C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase8-move-git-failure
+ok home isolated: C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase8-move-git-failure\home
+ok fake gh first on PATH: []
+ok lock: absent
+$ [dev] branch C from main -> cc8a05a
+$ [dev] branch B from C -> 6a8ba60
+$ bases {"C":"main","B":"C"}
+$ tkitchen round
+[stderr]
+(node:16480) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ [mate] commit 1 on C -> c679976
+$ sql select (select count(*) from event) e,(select group_concat(branch||'='||oid) from repo_heads) h,(select group_concat(branch||'='||status) from branch_state) s
+[
+ {
+  "e": 0,
+  "h": "B=6a8ba60b12cf5a882c3c7b1c1d30d6a01c80146f,C=cc8a05af570dbe6f1f5b08c1a881eb0c039466b2,main=d1f33348439e770119b4cb5b07e08220535121b7",
+  "s": "B=up_to_date,C=up_to_date"
+ }
+]
+(node:34752) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+$ set-url .verification-evidence/verify-tkitchen/phase8-move-git-failure/no-such-origin.git
+$ tkitchen round
+[stderr]
+(node:35564) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 1]
+$ sql select (select count(*) from event) e,(select group_concat(branch||'='||oid) from repo_heads) h,(select group_concat(branch||'='||status) from branch_state) s
+[
+ {
+  "e": 0,
+  "h": "B=6a8ba60b12cf5a882c3c7b1c1d30d6a01c80146f,C=cc8a05af570dbe6f1f5b08c1a881eb0c039466b2,main=d1f33348439e770119b4cb5b07e08220535121b7",
+  "s": "B=up_to_date,C=up_to_date"
+ }
+]
+(node:2192) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+$ tkitchen notices --json
+{"notices":[],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:39:12.527Z","lastError":"git ls-remote failed: fatal: '.verification-evidence/verify-tkitchen/phase8-move-git-failure/no-such-origin.git' does not appear to be a git repository\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists."}]}
+[stderr]
+(node:7880) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ set-url ORIGIN
+$ tkitchen round
+[stderr]
+(node:43892) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[{"repo":"x","branch":"B","base":"C","evidence":"explicit","status":"behind","behindBy":1,"lastEventId":"36bec172321aaded1c3b7fb48563bc67c2d5102348083de0a7d117aaa7860fb2"}],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:39:16.023Z","lastError":null}]}
+[stderr]
+(node:45532) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]

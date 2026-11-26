@@ -1,0 +1,11 @@
+PASS serve writes kitchen.lock with its pid :: 1
+PASS second serve exits 1 :: 1
+FAIL second serve names first pid :: expected [already running (pid 39184)] got [(node:39384) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+already running (pid 39184)]
+PASS round refuses while serve runs :: 1
+PASS round --force is unknown (exit 2) :: 2
+PASS serve loop picks up a push on its own :: B:1
+PASS lastCompleteAt advanced :: true
+PASS killed serve leaves a lock naming the dead pid :: 1
+PASS dead-pid lock taken over by new serve :: 1

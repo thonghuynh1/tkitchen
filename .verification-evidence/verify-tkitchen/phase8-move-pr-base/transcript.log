@@ -1,0 +1,134 @@
+# world created 2026-11-26T04:38:46.060Z repo=C:\Hackathon\tkitchen head=21a23211595f6aafc35460375dd3c836b15ee127
+$ doctor
+ok node>=22.19: 22.22.1
+ok git: git version 2.56.1.windows.1
+ok deps installed: C:\Hackathon\tkitchen\node_modules
+ok world exists: C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase8-move-pr-base
+ok home isolated: C:\Hackathon\tkitchen\.verification-evidence\verify-tkitchen\phase8-move-pr-base\home
+ok fake gh first on PATH: []
+ok lock: absent
+$ [dev] branch feature-1 from main -> 559494c
+$ [mate] branch feature-2 from feature-1 -> aeace29
+$ prs [["feature-2","feature-1"]]
+$ tkitchen round
+[stderr]
+(node:12328) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ [dev] commit 1 on feature-1 -> 60327cf
+$ tkitchen round
+[stderr]
+(node:41688) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[{"repo":"x","branch":"feature-2","base":"feature-1","evidence":"pr","status":"behind","behindBy":1,"lastEventId":"8e02bc2612d82b6eaa421c0aca3b431900c8b9de9092b360ed83dae91e12bb4b"}],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:38:52.430Z","lastError":null}]}
+[stderr]
+(node:15916) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ prs [["feature-2","main"]]
+$ tkitchen round
+[stderr]
+(node:18984) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ sql select base from branch_state where branch='feature-2'
+[
+ {
+  "base": "main"
+ }
+]
+(node:44996) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+$ prs [["feature-2","feature-1"]]
+$ tkitchen round
+[stderr]
+(node:36448) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ [dev] commit 1 on feature-1 -> 613d7fa
+$ sql select (select group_concat(id) from event) e,(select count(*) from disposition) d,(select group_concat(branch||'='||oid) from repo_heads) h,(select group_concat(branch||'='||status||'='||ifnull(behind_by,'-')) from branch_state) s
+[
+ {
+  "e": "8e02bc2612d82b6eaa421c0aca3b431900c8b9de9092b360ed83dae91e12bb4b",
+  "d": 1,
+  "h": "feature-1=60327cf4b3e8e1baf2bbcbee6f1ed62e0cc414bf,feature-2=aeace29fd699848e1dd3725edfbe85c3f4f8eee9,main=f762afe6e5662b679627d7ec99db442ae228cabc",
+  "s": "feature-1=up_to_date=0,feature-2=behind=1"
+ }
+]
+(node:33200) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+$ FAKE_GH_FAIL=1 tkitchen round
+[stderr]
+(node:31720) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 1]
+$ sql select (select group_concat(id) from event) e,(select count(*) from disposition) d,(select group_concat(branch||'='||oid) from repo_heads) h,(select group_concat(branch||'='||status||'='||ifnull(behind_by,'-')) from branch_state) s
+[
+ {
+  "e": "8e02bc2612d82b6eaa421c0aca3b431900c8b9de9092b360ed83dae91e12bb4b",
+  "d": 1,
+  "h": "feature-1=60327cf4b3e8e1baf2bbcbee6f1ed62e0cc414bf,feature-2=aeace29fd699848e1dd3725edfbe85c3f4f8eee9,main=f762afe6e5662b679627d7ec99db442ae228cabc",
+  "s": "feature-1=up_to_date=0,feature-2=behind=1"
+ }
+]
+(node:37872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+$ tkitchen notices --json
+{"notices":[{"repo":"x","branch":"feature-2","base":"feature-1","evidence":"pr","status":"behind","behindBy":1,"lastEventId":"8e02bc2612d82b6eaa421c0aca3b431900c8b9de9092b360ed83dae91e12bb4b"}],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:38:55.427Z","lastError":"gh pr list failed: fake gh failure"}]}
+[stderr]
+(node:21628) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen round
+[stderr]
+(node:23596) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[{"repo":"x","branch":"feature-2","base":"feature-1","evidence":"pr","status":"behind","behindBy":2,"lastEventId":"37bb49518c45cbfdc9bcac3fd19100283b3fd097938f5b2db3f9a003dced438c"}],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:38:59.646Z","lastError":null}]}
+[stderr]
+(node:45456) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ [mate] branch fork-b from main -> 2c81abe
+$ prs [["feature-2","feature-1"],["fork-b","feature-1","fork"]]
+$ tkitchen round
+[stderr]
+(node:46028) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[{"repo":"x","branch":"feature-2","base":"feature-1","evidence":"pr","status":"behind","behindBy":2,"lastEventId":"37bb49518c45cbfdc9bcac3fd19100283b3fd097938f5b2db3f9a003dced438c"},{"repo":"x","branch":"fork-b","base":null,"evidence":null,"status":"needs_base","behindBy":null,"lastEventId":null}],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:39:02.592Z","lastError":null}]}
+[stderr]
+(node:36808) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ [mate] branch h from main -> 5d83e84
+$ bases {"h":"main"}
+$ prs [["h","feature-1"]]
+$ tkitchen round
+[stderr]
+(node:3468) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[{"repo":"x","branch":"feature-2","base":null,"evidence":null,"status":"needs_base","behindBy":null,"lastEventId":"37bb49518c45cbfdc9bcac3fd19100283b3fd097938f5b2db3f9a003dced438c"},{"repo":"x","branch":"fork-b","base":null,"evidence":null,"status":"needs_base","behindBy":null,"lastEventId":null},{"repo":"x","branch":"h","base":null,"evidence":"explicit_pr_mismatch","status":"ambiguous","behindBy":null,"lastEventId":null}],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:39:05.708Z","lastError":null}]}
+[stderr]
+(node:41120) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ bases {}
+$ prs [["h","feature-1"],["h","main"]]
+$ tkitchen round
+[stderr]
+(node:35568) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]
+$ tkitchen notices --json
+{"notices":[{"repo":"x","branch":"feature-2","base":null,"evidence":null,"status":"needs_base","behindBy":null,"lastEventId":"37bb49518c45cbfdc9bcac3fd19100283b3fd097938f5b2db3f9a003dced438c"},{"repo":"x","branch":"fork-b","base":null,"evidence":null,"status":"needs_base","behindBy":null,"lastEventId":null},{"repo":"x","branch":"h","base":null,"evidence":"multiple_prs","status":"ambiguous","behindBy":null,"lastEventId":null}],"rounds":[{"repo":"x","lastCompleteAt":"2026-11-26T04:39:07.345Z","lastError":null}]}
+[stderr]
+(node:44692) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[exit 0]

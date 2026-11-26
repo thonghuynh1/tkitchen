@@ -1,0 +1,9 @@
+PASS serve writes kitchen.lock with its pid :: 1
+PASS second serve exits 1 :: 1
+PASS second serve names first pid :: already running (pid 47632)
+PASS round refuses while serve runs :: 1
+PASS round --force is unknown (exit 2) :: 2
+PASS serve loop picks up a push on its own :: B:1
+PASS lastCompleteAt advanced :: true
+PASS killed serve leaves a lock naming the dead pid :: 1
+PASS dead-pid lock taken over by new serve :: 1

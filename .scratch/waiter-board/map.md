@@ -24,9 +24,18 @@ A local-hosted kanban board, run on whichever machine hosts it and exposed at a 
 - [D8 Board per host](ledger.md): each host has its own board and store; nothing syncs between hosts.
 - [D9 Borrow cookout's patterns](ledger.md): mattpocock/cookout has no license, so we rewrite its patterns (SSE with revocation, webhook delivery with retries, module seams, lint ratchet) on our own stack, not fork it.
 - [D10 UI](ledger.md): our own UI, built with shadcn/ui.
+- [D12 Expose URL](ledger.md): `tkitchen board` takes `--public-url` (BYO Cloudflare Named Tunnel on `board.<domain>` on home PC; localhost-only on work laptop).
+- [D13 Host owner](ledger.md): single host owner (`ownerGithubId`) creates cards, invites, removes, and soft-deletes; invitees see only their cards; strangers get `403` on writes.
+- [D14 Invites & Close sharing](ledger.md): one active multi-use invite link per card; "Close sharing" revokes link + kicks all non-owners + closes SSE streams; individual kick also revokes active link; new invite generates a fresh token.
+- [D15 Board store](ledger.md): separate `~/.tkitchen/board.db` beside `kitchen.db`.
+- [D16 Live SSE chat](ledger.md): single per-user SSE stream (`GET /v1/stream`) + HTTP `POST` writes + `?after=<seq>` catch-up on reconnect; 1-level threads (D9); column moves (D5).
+- [D17 Soft-delete](ledger.md): messages kept forever in `board.db`; owner soft-deletes cards (`archived_at = now`), revoking invites and closing non-owner streams (no archive viewer in Slice 1).
+- [D18 `@waiter` placeholder](ledger.md): messages record `MessageId` + `mentionsWaiter` (word-boundary case-insensitive `@waiter` outside code spans; no Trigger yet) + `@` mention picker in composer.
 - [How aiLau's cloud extension dials out](wayfinder/04-ailau-cloud-pattern.md): Current branch uses HTTPS snapshot backups, not a WebSocket mailbox; Worker internals are unverified.
 
 ## Slice outcomes
+
+- [Slice 1 — Board and card chat](wayfinder/01-board-and-card-chat.md#slice-1--board-and-card-chat): Planned (issues `01`–`06`; implementation and `/indicate` pending).
 
 ## Not yet specified
 

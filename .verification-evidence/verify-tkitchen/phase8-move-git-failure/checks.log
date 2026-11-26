@@ -1,0 +1,5 @@
+PASS unreachable remote: round exits 1 :: 1
+PASS unreachable remote: store unchanged :: [{"e":0,"h":"B=6a8ba60b12cf5a882c3c7b1c1d30d6a01c80146f,C=cc8a05af570dbe6f1f5b08c1a881eb0c039466b2,main=d1f33348439e770119b4cb5b07e08220535121b7","s":"B=up_to_date,C=up_to_date"}]
+PASS unreachable remote: lastError set :: true
+PASS restored remote: round exits 0 :: 0
+PASS restored remote: move recorded, error cleared :: B:1 err=null
