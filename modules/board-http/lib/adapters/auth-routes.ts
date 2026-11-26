@@ -115,6 +115,7 @@ function me(context: AuthContext, req: IncomingMessage, res: ServerResponse): vo
   }
   const body: MeResponse = {
     ok: true,
+    authenticated: true,
     user: { id: viewer.user.id, login: viewer.user.login, isOwner: viewer.isOwner },
   };
   sendJson(res, STATUS_OK, body);

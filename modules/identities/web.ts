@@ -4,4 +4,4 @@ export interface MeUser {
   isOwner: boolean;
 }
 
-export type MeResponse = { ok: true; user: MeUser } | { ok: false; error: "unauthorized" };
+export type MeResponse = { ok: true; authenticated: true; user: MeUser } | { ok: false; error: "unauthorized" };

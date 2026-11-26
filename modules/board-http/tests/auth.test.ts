@@ -132,11 +132,19 @@ describe("board auth", () => {
     expect(sessionCookie).toContain("Secure");
     const me = await fetch(board.url + "/v1/me", { headers: { cookie: owner.session } });
     expect(me.status).toBe(200);
-    expect(await me.json()).toEqual({ ok: true, user: { id: "github:42", login: "owner", isOwner: true } });
+    expect(await me.json()).toEqual({
+      ok: true,
+      authenticated: true,
+      user: { id: "github:42", login: "owner", isOwner: true },
+    });
 
     const guest = await signIn("guest");
     const guestMe = await fetch(board.url + "/v1/me", { headers: { cookie: guest.session } });
-    expect(await guestMe.json()).toEqual({ ok: true, user: { id: "github:99", login: "guest", isOwner: false } });
+    expect(await guestMe.json()).toEqual({
+      ok: true,
+      authenticated: true,
+      user: { id: "github:99", login: "guest", isOwner: false },
+    });
   });
 
   it("leaves Secure off when publicUrl is http, and defaults publicUrl to the bind url", async () => {
