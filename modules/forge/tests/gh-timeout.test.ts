@@ -8,7 +8,7 @@ import { PortError } from "../../platform/index.ts";
 
 const KILL_WAIT_MS = 10000;
 const KILL_STEP_MS = 100;
-const FAKE_GH_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "tests", "fixtures", "fake-gh");
+const FAKE_GH_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "fixtures", "fake-gh");
 
 function alive(pid: number): boolean {
   try {

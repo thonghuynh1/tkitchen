@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { git, cli } from "../../../tests/helpers.ts";
+import { git, cli } from "../../testing/adapters.ts";
 import { createGitRunner, GitRepoImpl, GIT_TIMEOUT_MS } from "../adapters.ts";
 import { PortError } from "../../platform/index.ts";
 

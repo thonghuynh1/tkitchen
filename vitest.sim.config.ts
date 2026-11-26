@@ -5,7 +5,7 @@ export default mergeConfig(
   base,
   defineConfig({
     test: {
-      include: ["tests/sim/**/*.sim.ts"],
+      include: ["sim/**/*.sim.ts"],
       testTimeout: 300000,
       hookTimeout: 60000,
     },

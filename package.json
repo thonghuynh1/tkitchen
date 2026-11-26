@@ -16,7 +16,7 @@
     "build:web": "vite build",
     "verify:structure": "node scripts/check-module-structure.mjs",
     "verify": "npm run format:check && npm run lint && npm run lint:guard && npm run typecheck && npm run seams && npm run verify:structure && npm test && npm run test:sim --if-present && npm run build:web",
-    "seams": "depcruise modules index.ts src tests scripts --config .dependency-cruiser.cjs",
+    "seams": "depcruise modules index.ts src sim scripts deploy fixtures --config .dependency-cruiser.cjs",
     "lint:baseline": "node scripts/lint-ratchet.ts --write",
     "lint:guard": "node scripts/lint-config-guard.ts"
   },

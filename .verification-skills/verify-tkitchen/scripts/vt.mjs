@@ -5,7 +5,7 @@ import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAKE_GH_DIR = join(REPO, "tests", "fixtures", "fake-gh");
+const FAKE_GH_DIR = join(REPO, "fixtures", "fake-gh");
 const CLI = join(REPO, "modules", "cli", "lib", "adapters", "main.ts");
 
 function die(msg) {

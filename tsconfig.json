@@ -15,5 +15,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["modules/**/*.ts", "index.ts", "tests/**/*.ts"]
+  "include": ["modules/**/*.ts", "index.ts", "sim/**/*.ts", "scripts/tests/**/*.ts", "deploy/**/*.ts"]
 }

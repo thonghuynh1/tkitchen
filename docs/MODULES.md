@@ -15,10 +15,12 @@ modules/cli/        the composition root as a module: lib/parse.ts reads the wor
                     lib/adapters/run.ts wires adapters to contracts, lib/adapters/main.ts runs it
 index.ts            package entry: re-exports module entries only
 src/                the waiter board web app (Vite entry index.html at the root; src/main.tsx)
-tests/              cross-module suites: cli, sim, contract, quality, deploy
+sim/                the Round simulation: doubles, oracles and scenarios over the module entries
+fixtures/           what tests share outside any module (the fake gh)
+scripts/            the checkers; scripts/tests/ holds their suites and fixtures
 ```
 
-Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen home), triggers (Trigger, Thread, Disposition, the kitchen store), branches (watched branches, Base resolution), notices, rounds (Round, serve loop), export, git, forge, config, lock, board-http (the board's HTTP server on `node:http`: the built page plus `/v1/health`), cli (the words on the command line and the wiring that runs them).
+Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen home), triggers (Trigger, Thread, Disposition, the kitchen store), branches (watched branches, Base resolution), notices, rounds (Round, serve loop), export, git, forge, config, lock, board-http (the board's HTTP server on `node:http`: the built page plus `/v1/health`), cli (the words on the command line and the wiring that runs them), testing (the process helpers module tests share; test code only, and the root `index.ts` does not export it).
 
 ## Rules
 
@@ -43,9 +45,9 @@ Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen ho
 | Web build            | `npm run build:web`            | `vite build` into `dist/web`                                                                                                                                                                                   |
 | Seams                | `npm run seams`                | dependency-cruiser, `.dependency-cruiser.cjs`: the entries, pure lib, pure index, cycle and import rules, one named rule each                                                                                  |
 | Environment and size | `npm run verify:structure`     | `scripts/check-module-structure.mjs`: the clock rule and the 800-line budget                                                                                                                                   |
-| Tests                | `npm test`, `npm run test:sim` | unit, contract, CLI and quality suites; the Round simulation                                                                                                                                                   |
+| Tests                | `npm test`, `npm run test:sim` | each module's tests in its own `tests/`, the checker suites in `scripts/tests/`, the deploy test; the Round simulation                                                                                         |
 
-Each rule has a failing fixture in `tests/quality/`: `seams.test.ts`, `structure.test.ts`, `lint.test.ts`, `ratchet.test.ts`, `guard.test.ts`.
+Each rule has a failing fixture in `scripts/tests/`: `seams.test.ts`, `structure.test.ts`, `lint.test.ts`, `ratchet.test.ts`, `guard.test.ts`.
 
 ### Lint ratchet
 
@@ -72,4 +74,4 @@ Create `modules/<name>/` with `lib/contract.ts`, `lib/`, `index.ts`, and `adapte
 
 ## Lint backend
 
-`npm run lint` runs oxlint with type-aware rules (`typeAware: true` in `.oxlintrc.json`). The type-aware backend is the `tsrs` package (typescript-go based, `0.25.0-ts7.1.0-beta`, copied from tstack at `bfa26c76`): with `typeAware` on and no backend installed, oxlint 1.94 fails with `Failed to find type-aware linter executable. You may need to add the tsrs or oxlint-tsgolint package to your project?`, and tstack's `package.json` carries both `oxlint ^1.94.0` and that exact `tsrs` version while its `node_modules` contains no `oxlint-tsgolint` package. tkitchen copies that arrangement, so `tsrs` is a devDependency alongside `oxlint`. The floating-promise fixture in `tests/quality/lint.test.ts` proves the type-aware rules are active, because that rule cannot fire without type information.
+`npm run lint` runs oxlint with type-aware rules (`typeAware: true` in `.oxlintrc.json`). The type-aware backend is the `tsrs` package (typescript-go based, `0.25.0-ts7.1.0-beta`, copied from tstack at `bfa26c76`): with `typeAware` on and no backend installed, oxlint 1.94 fails with `Failed to find type-aware linter executable. You may need to add the tsrs or oxlint-tsgolint package to your project?`, and tstack's `package.json` carries both `oxlint ^1.94.0` and that exact `tsrs` version while its `node_modules` contains no `oxlint-tsgolint` package. tkitchen copies that arrangement, so `tsrs` is a devDependency alongside `oxlint`. The floating-promise fixture in `scripts/tests/lint.test.ts` proves the type-aware rules are active, because that rule cannot fire without type information.

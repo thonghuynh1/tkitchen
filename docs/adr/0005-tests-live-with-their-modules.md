@@ -1,0 +1,9 @@
+# ADR 0005: tests live with their modules
+
+Status: accepted, 2026-11-26. Amends the layout in ADR 0001 and ADR 0003.
+
+The root `tests/` folder held five different things under one name. The CLI suites drove the real process. The contract suites pinned the git and forge contracts. The quality suites pinned the checkers in `scripts/`. One suite pinned the Windows installer. And the simulation, the shared process helpers, and the fake `gh` sat in the same tree. A reader asking which tests pin a module had to know which root folder its phase had used. ts-template keeps each module's tests inside the module and puts shared test doubles in a `testing` module that only tests may import.
+
+So the root `tests/` folder is gone. The CLI suites moved to `modules/cli/tests/`. The contract suites moved to `modules/git/tests/` and `modules/forge/tests/`. The installer test moved to `deploy/windows/`, beside the scripts it pins. The checker suites and their fixtures moved to `scripts/tests/`, beside the checkers. The simulation moved to `sim/` at the root and the fake `gh` to `fixtures/`, because both stand outside the modules and look in through their entries. The process helpers became `modules/testing/`, shaped like any module, with its Node code behind `adapters.ts`. A new seam, `testing-only-from-tests`, keeps production code from importing it, and the root `index.ts` does not export it.
+
+The move changes no behavior. Every test asserts what it asserted before, and git records each file as a rename. Two checkers needed care. The lint ratchet learned that a renamed file keeps its baseline, in the commit before this one. The lint override that covers test code now names `sim/` as well. One cast in the old helpers file got a real guard, because inside a module it is production code and the type-aware rule applies.

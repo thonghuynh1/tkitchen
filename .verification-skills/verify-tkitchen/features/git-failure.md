@@ -17,4 +17,4 @@ Happens on its own when the network or remote is down.
 
 ## Gotchas
 
-Git timeouts, fetch-after-ls-remote failures, force-push repeats and deletions are proven in the DST sweep (`npm run test:sim`) and `tests/infrastructure/git-timeout.test.ts`, not in this journey.
+Git timeouts, fetch-after-ls-remote failures, force-push repeats and deletions are proven in the DST sweep (`npm run test:sim`) and `modules/git/tests/git-timeout.test.ts`, not in this journey.

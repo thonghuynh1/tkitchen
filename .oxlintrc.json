@@ -109,7 +109,7 @@
       }
     },
     {
-      "files": ["**/tests/**", "**/*.test.*", "**/*.sim.ts"],
+      "files": ["**/tests/**", "**/*.test.*", "**/*.sim.ts", "sim/**"],
       "rules": {
         "eslint/max-lines": "off",
         "eslint/complexity": "off",

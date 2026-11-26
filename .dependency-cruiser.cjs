@@ -15,7 +15,7 @@ module.exports = {
     },
     {
       name: "entry-points-only-from-outside",
-      comment: "The CLI, the package entry, scripts and the root suites reach a module only through its entries.",
+      comment: "The package entry, scripts, the sim and the deploy tests reach a module only through its entries.",
       severity: "error",
       from: { pathNot: "^modules/" },
       to: { path: MODULE_INTERNALS },
@@ -70,6 +70,13 @@ module.exports = {
       to: { path: "^modules/", pathNot: "^modules/[^/]+/web\\.ts$" },
     },
     {
+      name: "testing-only-from-tests",
+      comment: "The testing module holds helpers for tests; production code never imports it.",
+      severity: "error",
+      from: { pathNot: ["^modules/[^/]+/tests/", "^modules/testing/"] },
+      to: { path: "^modules/testing/" },
+    },
+    {
       name: "radix-only-in-components-ui",
       comment: "Only the generated shadcn components import Radix primitives.",
       severity: "error",
@@ -97,7 +104,7 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: "node_modules" },
-    exclude: { path: "^tests/quality/fixtures/" },
+    exclude: { path: "^scripts/tests/fixtures/" },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: "tsconfig.json" },
     enhancedResolveOptions: { extensions: [".ts", ".tsx", ".mjs", ".js", ".cjs"] },

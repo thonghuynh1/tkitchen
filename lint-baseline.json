@@ -1,22 +1,34 @@
 {
-  "scripts/check-module-structure.mjs": {
-    "design/context-terms": 1
-  },
-  "scripts/lint-config-guard.ts": {
-    "design/context-terms": 1
-  },
-  "scripts/lint-ratchet.ts": {
-    "design/context-terms": 3,
-    "design/no-unsafe-as": 1
-  },
-  "scripts/oxlint/design-rules.js": {
-    "design/context-terms": 1
+  "deploy/windows/install-task.test.ts": {
+    "design/context-terms": 4,
+    "design/no-unsafe-as": 2
   },
   "modules/branches/lib/base.ts": {
     "design/context-terms": 4
   },
   "modules/branches/lib/branch.ts": {
     "design/context-terms": 1
+  },
+  "modules/cli/tests/export.test.ts": {
+    "design/context-terms": 1,
+    "design/no-unsafe-as": 1
+  },
+  "modules/cli/tests/forge-none.test.ts": {
+    "design/no-unsafe-as": 2
+  },
+  "modules/cli/tests/pr-base.test.ts": {
+    "design/no-unsafe-as": 2
+  },
+  "modules/cli/tests/reflog-base.test.ts": {
+    "design/context-terms": 2,
+    "design/no-unsafe-as": 3
+  },
+  "modules/cli/tests/serve-lock.test.ts": {
+    "design/no-unsafe-as": 1
+  },
+  "modules/cli/tests/walking-skeleton.test.ts": {
+    "design/context-terms": 4,
+    "design/no-unsafe-as": 1
   },
   "modules/config/lib/adapters/config-file.ts": {
     "design/context-terms": 1
@@ -80,82 +92,67 @@
   "modules/triggers/lib/trigger.ts": {
     "design/context-terms": 1
   },
-  "tests/cli/export.test.ts": {
-    "design/context-terms": 1,
+  "scripts/check-module-structure.mjs": {
+    "design/context-terms": 1
+  },
+  "scripts/lint-config-guard.ts": {
+    "design/context-terms": 1
+  },
+  "scripts/lint-ratchet.ts": {
+    "design/context-terms": 3,
     "design/no-unsafe-as": 1
   },
-  "tests/cli/forge-none.test.ts": {
-    "design/no-unsafe-as": 2
+  "scripts/oxlint/design-rules.js": {
+    "design/context-terms": 1
   },
-  "tests/cli/pr-base.test.ts": {
-    "design/no-unsafe-as": 2
-  },
-  "tests/cli/reflog-base.test.ts": {
-    "design/context-terms": 2,
-    "design/no-unsafe-as": 3
-  },
-  "tests/cli/serve-lock.test.ts": {
+  "scripts/tests/guard.test.ts": {
     "design/no-unsafe-as": 1
   },
-  "tests/cli/walking-skeleton.test.ts": {
-    "design/context-terms": 4,
-    "design/no-unsafe-as": 1
-  },
-  "tests/deploy/install-task.test.ts": {
-    "design/context-terms": 4,
-    "design/no-unsafe-as": 2
-  },
-  "tests/helpers.ts": {
-    "design/no-unsafe-as": 1
-  },
-  "tests/quality/guard.test.ts": {
-    "design/no-unsafe-as": 1
-  },
-  "tests/quality/lint.test.ts": {
+  "scripts/tests/lint.test.ts": {
     "design/context-terms": 2,
     "design/no-unsafe-as": 1
   },
-  "tests/quality/seams.test.ts": {
+  "scripts/tests/seams.test.ts": {
     "design/context-terms": 1,
     "design/no-unsafe-as": 3
   },
-  "tests/quality/structure.test.ts": {
+  "scripts/tests/structure.test.ts": {
     "design/no-unsafe-as": 1
   },
-  "tests/sim/doubles/sim-remote.ts": {
+  "sim/doubles/sim-remote.ts": {
     "design/context-terms": 7
   },
-  "tests/sim/doubles/sim-store.ts": {
+  "sim/doubles/sim-store.ts": {
     "design/context-terms": 4
   },
-  "tests/sim/faults/crash.ts": {
+  "sim/faults/crash.ts": {
     "design/context-terms": 2
   },
-  "tests/sim/oracles/ground-truth.ts": {
+  "sim/oracles/ground-truth.ts": {
     "design/context-terms": 6
   },
-  "tests/sim/round.sim.ts": {
+  "sim/round.sim.ts": {
     "design/context-terms": 2
   },
-  "tests/sim/runner/loop.ts": {
+  "sim/runner/loop.ts": {
     "design/context-terms": 7
   },
-  "tests/sim/scenarios/force-push-repeat.sim.ts": {
+  "sim/scenarios/force-push-repeat.sim.ts": {
     "design/context-terms": 1
   },
-  "tests/sim/serve.sim.ts": {
+  "sim/serve.sim.ts": {
     "design/context-terms": 3
   },
-  "tests/sim/world.sim.ts": {
+  "sim/world.sim.ts": {
     "design/context-terms": 1
   },
-  "tests/sim/world/determinism.ts": {
+  "sim/world/determinism.ts": {
     "design/context-terms": 1
   },
-  "tests/sim/world/trace.ts": {
+  "sim/world/trace.ts": {
     "design/context-terms": 2
   },
-  "tests/sim/world/world.ts": {
+  "sim/world/world.ts": {
     "design/context-terms": 1
   }
 }

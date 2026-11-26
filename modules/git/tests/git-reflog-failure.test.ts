@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { git } from "../../../tests/helpers.ts";
+import { git } from "../../testing/adapters.ts";
 import { GitRepoImpl } from "../adapters.ts";
 import type { GitRunResult } from "../adapters.ts";
 import { PortError } from "../../platform/index.ts";
