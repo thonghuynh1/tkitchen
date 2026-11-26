@@ -16,7 +16,9 @@ function writeSleepScript(root: string): string {
   writeFileSync(script, "setTimeout(() => undefined, " + SLEEP_MS + ");\n");
   return script;
 }
-function sshCommand(script: string): string { return "node \"" + script.replaceAll("\\", "/") + "\""; }
+function sshCommand(script: string): string {
+  return 'node "' + script.replaceAll("\\", "/") + '"';
+}
 
 describe("git timeout", () => {
   it("exports the named 20s constant", () => {
@@ -32,7 +34,11 @@ describe("git timeout", () => {
       const runner = createGitRunner({ timeoutMs: SLOW_TIMEOUT_MS });
       const started = Date.now();
       let caught: unknown = null;
-      try { await runner(["ls-remote", "ssh://git@example.invalid/repo.git"], root); } catch (e) { caught = e; }
+      try {
+        await runner(["ls-remote", "ssh://git@example.invalid/repo.git"], root);
+      } catch (e) {
+        caught = e;
+      }
       const elapsed = Date.now() - started;
       expect(caught).toBeInstanceOf(PortError);
       expect(caught instanceof PortError ? caught.kind : "").toBe("timeout");
@@ -42,7 +48,11 @@ describe("git timeout", () => {
       const repo = new GitRepoImpl(root, { timeoutMs: SLOW_TIMEOUT_MS });
       const started2 = Date.now();
       let caught2: unknown = null;
-      try { await repo.lsRemoteHeads("ssh://git@example.invalid/repo.git"); } catch (e) { caught2 = e; }
+      try {
+        await repo.lsRemoteHeads("ssh://git@example.invalid/repo.git");
+      } catch (e) {
+        caught2 = e;
+      }
       expect(caught2).toBeInstanceOf(PortError);
       expect(caught2 instanceof PortError ? caught2.kind : "").toBe("timeout");
       expect(Date.now() - started2).toBeLessThan(ONE_SECOND_MS);
@@ -74,9 +84,12 @@ describe("git timeout", () => {
       const db = new DatabaseSync(dbPath, { readOnly: true });
       try {
         const out: Record<string, unknown> = {};
-        for (const table of ["event", "disposition", "branch_state", "repo_heads"]) out[table] = db.prepare("SELECT * FROM " + table).all();
+        for (const table of ["event", "disposition", "branch_state", "repo_heads"])
+          out[table] = db.prepare("SELECT * FROM " + table).all();
         return JSON.stringify(out);
-      } finally { db.close(); }
+      } finally {
+        db.close();
+      }
     };
     const before = snapshot();
     const script = writeSleepScript(root);
@@ -91,8 +104,10 @@ describe("git timeout", () => {
       expect(result.code).toBe(1);
       expect(Date.now() - started).toBeLessThan(10000);
     } finally {
-      if (previousSsh === undefined) delete process.env["GIT_SSH_COMMAND"]; else process.env["GIT_SSH_COMMAND"] = previousSsh;
-      if (previousTimeout === undefined) delete process.env["TKITCHEN_GIT_TIMEOUT_MS"]; else process.env["TKITCHEN_GIT_TIMEOUT_MS"] = previousTimeout;
+      if (previousSsh === undefined) delete process.env["GIT_SSH_COMMAND"];
+      else process.env["GIT_SSH_COMMAND"] = previousSsh;
+      if (previousTimeout === undefined) delete process.env["TKITCHEN_GIT_TIMEOUT_MS"];
+      else process.env["TKITCHEN_GIT_TIMEOUT_MS"] = previousTimeout;
     }
     expect(snapshot()).toBe(before);
     const db = new DatabaseSync(dbPath, { readOnly: true });
@@ -100,6 +115,8 @@ describe("git timeout", () => {
       const rows = db.prepare("SELECT * FROM round_status").all() as Record<string, unknown>[];
       expect(rows).toHaveLength(1);
       expect(String(rows[0]?.["last_error"] ?? "")).toContain("timeout");
-    } finally { db.close(); }
+    } finally {
+      db.close();
+    }
   }, 60000);
 });

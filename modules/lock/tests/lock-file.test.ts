@@ -8,19 +8,29 @@ import { dirname, join as pathJoin } from "node:path";
 import { fileURLToPath } from "node:url";
 import { FileLock } from "../adapters.ts";
 
-function makeHome(): string { return mkdtempSync(join(tmpdir(), "tk-lock-")); }
+function makeHome(): string {
+  return mkdtempSync(join(tmpdir(), "tk-lock-"));
+}
 
 const NEVER_ASSIGNED_PID = 999999999;
 
 async function deadPid(): Promise<number> {
   let pid = NEVER_ASSIGNED_PID;
   for (;;) {
-    try { process.kill(pid, 0); } catch { return pid; }
+    try {
+      process.kill(pid, 0);
+    } catch {
+      return pid;
+    }
     pid -= 1;
   }
 }
 
-interface Contender { child: ChildProcess; result: Promise<{ pid: number; result: string }>; exited: Promise<void>; }
+interface Contender {
+  child: ChildProcess;
+  result: Promise<{ pid: number; result: string }>;
+  exited: Promise<void>;
+}
 
 function startContender(home: string): Contender {
   const script = pathJoin(dirname(fileURLToPath(import.meta.url)), "fixtures", "lock-contender.mjs");
@@ -31,16 +41,30 @@ function startContender(home: string): Contender {
       buffer += d.toString();
       const line = buffer.split("\n").find((l) => l.trim() !== "");
       if (line !== undefined) {
-        try { resolve(JSON.parse(line) as { pid: number; result: string }); } catch (e) { reject(e instanceof Error ? e : new Error(String(e))); }
+        try {
+          resolve(JSON.parse(line) as { pid: number; result: string });
+        } catch (e) {
+          reject(e instanceof Error ? e : new Error(String(e)));
+        }
       }
     });
-    child.on("exit", (code) => { if (code !== null && code !== 0) reject(new Error("contender exited " + code)); });
+    child.on("exit", (code) => {
+      if (code !== null && code !== 0) reject(new Error("contender exited " + code));
+    });
   });
-  const exited = new Promise<void>((resolve) => { child.on("exit", () => { resolve(); }); });
+  const exited = new Promise<void>((resolve) => {
+    child.on("exit", () => {
+      resolve();
+    });
+  });
   return { child, result, exited };
 }
 
-interface ScheduleWorker { child: ChildProcess; next: () => Promise<{ type: string; tag?: string; pid: number; result?: string }>; exited: Promise<void>; }
+interface ScheduleWorker {
+  child: ChildProcess;
+  next: () => Promise<{ type: string; tag?: string; pid: number; result?: string }>;
+  exited: Promise<void>;
+}
 
 function startScheduleWorker(home: string, mode: string): ScheduleWorker {
   const script = pathJoin(dirname(fileURLToPath(import.meta.url)), "fixtures", "lock-schedule-worker.mjs");
@@ -52,12 +76,22 @@ function startScheduleWorker(home: string, mode: string): ScheduleWorker {
     if (waiter !== undefined) waiter(m);
     else queue.push(m);
   });
-  const exited = new Promise<void>((resolve) => { child.on("exit", () => { resolve(); }); });
-  return { child, exited, next: () => {
-    const queued = queue.shift();
-    if (queued !== undefined) return Promise.resolve(queued);
-    return new Promise((resolve) => { waiters.push(resolve); });
-  } };
+  const exited = new Promise<void>((resolve) => {
+    child.on("exit", () => {
+      resolve();
+    });
+  });
+  return {
+    child,
+    exited,
+    next: () => {
+      const queued = queue.shift();
+      if (queued !== undefined) return Promise.resolve(queued);
+      return new Promise((resolve) => {
+        waiters.push(resolve);
+      });
+    },
+  };
 }
 
 describe("FileLock", () => {
@@ -135,7 +169,12 @@ describe("FileLock", () => {
     let written = 0;
     for (let i = 0; i < 40; i++) {
       ticket = ticket + ".recover-" + dead;
-      try { writeFileSync(ticket, String(dead)); written++; } catch { break; }
+      try {
+        writeFileSync(ticket, String(dead));
+        written++;
+      } catch {
+        break;
+      }
     }
     expect(written).toBeGreaterThan(10);
     writeFileSync(join(home, "kitchen.lock.recover-0123456789abcdef"), String(dead));
@@ -179,7 +218,10 @@ describe("FileLock", () => {
 
   it("forced delayed stale-read schedule has exactly one winner", async () => {
     const home = makeHome();
-    writeFileSync(join(home, "kitchen.lock"), JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
+    writeFileSync(
+      join(home, "kitchen.lock"),
+      JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }),
+    );
     const delayed = startScheduleWorker(home, "delayed-stale-read");
     const normal = startScheduleWorker(home, "normal");
     try {
@@ -203,7 +245,10 @@ describe("FileLock", () => {
 
   it("forced delayed takeover-recovery schedule has exactly one winner", async () => {
     const home = makeHome();
-    writeFileSync(join(home, "kitchen.lock"), JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
+    writeFileSync(
+      join(home, "kitchen.lock"),
+      JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }),
+    );
     writeFileSync(join(home, "kitchen.lock.takeover"), JSON.stringify({ pid: await deadPid(), key: "stale" }));
     const delayed = startScheduleWorker(home, "delayed-takeover-read");
     const normal = startScheduleWorker(home, "normal");
@@ -228,7 +273,10 @@ describe("FileLock", () => {
 
   it("forced missing-claim recovery schedule has exactly one winner", async () => {
     const home = makeHome();
-    writeFileSync(join(home, "kitchen.lock"), JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }));
+    writeFileSync(
+      join(home, "kitchen.lock"),
+      JSON.stringify({ pid: await deadPid(), startedAt: new Date().toISOString() }),
+    );
     const takeoverPath = join(home, "kitchen.lock.takeover");
     writeFileSync(takeoverPath, JSON.stringify({ pid: await deadPid(), key: "planted" }));
     const recoverer = startScheduleWorker(home, "recoverer");
@@ -267,7 +315,10 @@ describe("FileLock", () => {
         for (const c of contenders) c.child.stdin?.write("go\n");
         const results = await Promise.all(contenders.map((c) => c.result));
         const winners = results.filter((r) => r.result === "acquired");
-        expect(results.map((r) => r.result), "round " + round).not.toContain("error");
+        expect(
+          results.map((r) => r.result),
+          "round " + round,
+        ).not.toContain("error");
         expect(winners, "round " + round + ": " + JSON.stringify(results)).toHaveLength(1);
         const winnerPid = winners[0]?.pid;
         const content = JSON.parse(readFileSync(stalePath, "utf8")) as { pid: number };

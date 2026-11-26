@@ -6,6 +6,12 @@ export const singleWriter = {
   kind: "safety" as const,
   checkSystem(system: SimLockSystem): Violation[] {
     if (system.maxActiveWriters <= 1) return [];
-    return [{ oracle: "single-writer", kind: "safety" as const, detail: "lock held by " + system.maxActiveWriters + " live writers at once" }];
+    return [
+      {
+        oracle: "single-writer",
+        kind: "safety" as const,
+        detail: "lock held by " + system.maxActiveWriters + " live writers at once",
+      },
+    ];
   },
 };

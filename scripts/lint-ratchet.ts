@@ -70,7 +70,9 @@ export function compare(diagnostics: readonly Diagnostic[], baseline: Baseline):
     for (const [rule, count] of Object.entries(rules)) {
       const limit = allowed(baseline, file, rule);
       if (count <= limit) continue;
-      failures.push(file + " " + rule + ": " + count + " > " + limit + " in the baseline; the new ones are among these:");
+      failures.push(
+        file + " " + rule + ": " + count + " > " + limit + " in the baseline; the new ones are among these:",
+      );
       for (const d of diagnostics) {
         if (d.file === file && d.rule === rule) failures.push(d.file + ":" + d.line + " " + d.rule + " " + d.message);
       }
@@ -79,7 +81,10 @@ export function compare(diagnostics: readonly Diagnostic[], baseline: Baseline):
   for (const [file, rules] of Object.entries(baseline)) {
     for (const [rule, limit] of Object.entries(rules)) {
       const count = allowed(counts, file, rule);
-      if (count < limit) notes.push(file + " " + rule + ": " + count + " < " + limit + "; tighten the baseline with npm run lint:baseline");
+      if (count < limit)
+        notes.push(
+          file + " " + rule + ": " + count + " < " + limit + "; tighten the baseline with npm run lint:baseline",
+        );
     }
   }
   return { failures, notes };
@@ -91,7 +96,16 @@ export function refuseRaises(working: Baseline, atBase: Baseline, enabledAtBase:
     for (const [rule, count] of Object.entries(rules)) {
       const before = allowed(atBase, file, rule);
       if (count > before && enabledAtBase.has(rule)) {
-        refused.push(file + " " + rule + ": baseline raised from " + before + " to " + count + "; the rule was already on at the merge base, fix the code instead");
+        refused.push(
+          file +
+            " " +
+            rule +
+            ": baseline raised from " +
+            before +
+            " to " +
+            count +
+            "; the rule was already on at the merge base, fix the code instead",
+        );
       }
     }
   }
@@ -120,7 +134,11 @@ function sorted(baseline: Baseline): Baseline {
   const out: Record<string, Record<string, number>> = {};
   for (const file of Object.keys(baseline).toSorted()) {
     const rules = baseline[file] ?? {};
-    out[file] = Object.fromEntries(Object.keys(rules).toSorted().map((rule) => [rule, rules[rule] ?? 0]));
+    out[file] = Object.fromEntries(
+      Object.keys(rules)
+        .toSorted()
+        .map((rule) => [rule, rules[rule] ?? 0]),
+    );
   }
   return out;
 }
@@ -147,7 +165,11 @@ function asBaseline(value: unknown): Baseline {
 
 function lint(root: string): Diagnostic[] {
   const bin = join(root, "node_modules", "oxlint", "bin", "oxlint");
-  const result = spawnSync(process.execPath, [bin, "--format=json"], { cwd: root, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+  const result = spawnSync(process.execPath, [bin, "--format=json"], {
+    cwd: root,
+    encoding: "utf8",
+    maxBuffer: 256 * 1024 * 1024,
+  });
   if (result.error) throw result.error;
   return parseReport(result.stdout);
 }
@@ -162,7 +184,11 @@ function main(root: string, write: boolean): number {
   }
   const working = asBaseline(JSON.parse(readFileSync(baselinePath, "utf8")));
   const base = mergeBase(root);
-  const refused = refuseRaises(working, asBaseline(jsonAt(root, base, BASELINE_FILE)), enabledRules(jsonAt(root, base, CONFIG_FILE)));
+  const refused = refuseRaises(
+    working,
+    asBaseline(jsonAt(root, base, BASELINE_FILE)),
+    enabledRules(jsonAt(root, base, CONFIG_FILE)),
+  );
   const verdict = compare(diagnostics, working);
   for (const note of verdict.notes) console.log(note);
   const failures = [...refused, ...verdict.failures];
@@ -170,7 +196,15 @@ function main(root: string, write: boolean): number {
     console.error(failures.join("\n"));
     return 1;
   }
-  console.log("Lint ratchet holds: " + diagnostics.length + " diagnostics, none above " + BASELINE_FILE + " (merge base " + base.slice(0, 7) + ").");
+  console.log(
+    "Lint ratchet holds: " +
+      diagnostics.length +
+      " diagnostics, none above " +
+      BASELINE_FILE +
+      " (merge base " +
+      base.slice(0, 7) +
+      ").",
+  );
   return 0;
 }
 

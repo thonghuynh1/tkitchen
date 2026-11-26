@@ -7,7 +7,14 @@ import { git, cli } from "../helpers.ts";
 import { GitRepoImpl } from "../../modules/git/adapters.ts";
 import type { GitRunResult } from "../../modules/git/adapters.ts";
 
-interface Fixture { root: string; home: string; origin: string; work: string; work2: string; dbPath: string; }
+interface Fixture {
+  root: string;
+  home: string;
+  origin: string;
+  work: string;
+  work2: string;
+  dbPath: string;
+}
 
 async function commitFile(cwd: string, name: string): Promise<void> {
   writeFileSync(join(cwd, name), name + "\n");
@@ -22,19 +29,31 @@ async function branch(cwd: string, name: string, from: string): Promise<void> {
 }
 async function makeFixture(prefix: string): Promise<Fixture> {
   const root = mkdtempSync(join(tmpdir(), prefix));
-  const home = join(root, "home"); const origin = join(root, "origin.git"); const work = join(root, "work"); const work2 = join(root, "work2");
+  const home = join(root, "home");
+  const origin = join(root, "origin.git");
+  const work = join(root, "work");
+  const work2 = join(root, "work2");
   await git(root, "init", "--bare", origin);
   await git(root, "clone", origin, work);
-  await git(work, "config", "user.email", "t@t.t"); await git(work, "config", "user.name", "T");
+  await git(work, "config", "user.email", "t@t.t");
+  await git(work, "config", "user.name", "T");
   await git(work, "checkout", "-b", "main");
   await commitFile(work, "main.txt");
   await git(work, "push", "-u", "origin", "main");
-  await branch(work, "A", "main"); await branch(work, "F", "A"); await branch(work, "C", "main"); await branch(work, "B", "C"); await branch(work, "D", "C");
+  await branch(work, "A", "main");
+  await branch(work, "F", "A");
+  await branch(work, "C", "main");
+  await branch(work, "B", "C");
+  await branch(work, "D", "C");
   await git(root, "clone", origin, work2);
-  await git(work2, "config", "user.email", "t@t.t"); await git(work2, "config", "user.name", "T");
+  await git(work2, "config", "user.email", "t@t.t");
+  await git(work2, "config", "user.name", "T");
   const { mkdirSync } = await import("node:fs");
   mkdirSync(home, { recursive: true });
-  writeFileSync(join(home, "config.json"), JSON.stringify({ repos: [{ name: "x", path: work, bases: { A: "main", F: "A", C: "main", B: "C", D: "C" } }] }));
+  writeFileSync(
+    join(home, "config.json"),
+    JSON.stringify({ repos: [{ name: "x", path: work, bases: { A: "main", F: "A", C: "main", B: "C", D: "C" } }] }),
+  );
   return { root, home, origin, work, work2, dbPath: join(home, "kitchen.db") };
 }
 async function pushToC(f: Fixture): Promise<void> {
@@ -44,13 +63,41 @@ async function pushToC(f: Fixture): Promise<void> {
 }
 function readRows(dbPath: string, table: string): Record<string, unknown>[] {
   const db = new DatabaseSync(dbPath, { readOnly: true });
-  try { return db.prepare("SELECT * FROM " + table).all(); } finally { db.close(); }
+  try {
+    return db.prepare("SELECT * FROM " + table).all();
+  } finally {
+    db.close();
+  }
 }
-function text(r: Record<string, unknown>, k: string): string { const v = r[k]; if (typeof v !== "string") throw new Error(k); return v; }
-async function notices(f: Fixture): Promise<{ notices: { repo: string; branch: string; base: string; evidence: string; status: string; behindBy: number; lastEventId: string }[] }> {
+function text(r: Record<string, unknown>, k: string): string {
+  const v = r[k];
+  if (typeof v !== "string") throw new Error(k);
+  return v;
+}
+async function notices(f: Fixture): Promise<{
+  notices: {
+    repo: string;
+    branch: string;
+    base: string;
+    evidence: string;
+    status: string;
+    behindBy: number;
+    lastEventId: string;
+  }[];
+}> {
   const r = await cli(f.home, "notices", "--json");
   expect(r.code).toBe(0);
-  return JSON.parse(r.stdout) as { notices: { repo: string; branch: string; base: string; evidence: string; status: string; behindBy: number; lastEventId: string }[] };
+  return JSON.parse(r.stdout) as {
+    notices: {
+      repo: string;
+      branch: string;
+      base: string;
+      evidence: string;
+      status: string;
+      behindBy: number;
+      lastEventId: string;
+    }[];
+  };
 }
 
 describe("walking skeleton", () => {
@@ -79,7 +126,8 @@ describe("walking skeleton", () => {
     expect(readRows(f.dbPath, "disposition")).toHaveLength(0);
     const out = await notices(f);
     const b = out.notices.find((n) => n.branch === "B");
-    expect(b?.status).toBe("behind"); expect(b?.behindBy).toBe(1);
+    expect(b?.status).toBe("behind");
+    expect(b?.behindBy).toBe(1);
     expect(readRows(f.dbPath, "branch_state").length).toBeGreaterThan(0);
   }, 60000);
 
@@ -88,7 +136,8 @@ describe("walking skeleton", () => {
     await cli(f.home, "round", "--repo", "x");
     await pushToC(f);
     await cli(f.home, "round", "--repo", "x");
-    const beforeE = readRows(f.dbPath, "event").length; const beforeD = readRows(f.dbPath, "disposition").length;
+    const beforeE = readRows(f.dbPath, "event").length;
+    const beforeD = readRows(f.dbPath, "disposition").length;
     expect((await cli(f.home, "round", "--repo", "x")).code).toBe(0);
     expect(readRows(f.dbPath, "event")).toHaveLength(beforeE);
     expect(readRows(f.dbPath, "disposition")).toHaveLength(beforeD);
@@ -120,13 +169,18 @@ describe("walking skeleton", () => {
     const verbs: string[] = [];
     const runner = async (args: string[]): Promise<GitRunResult> => {
       verbs.push(args[0] ?? "");
-      if (args[0] === "ls-remote") return { stdout: "ref: refs/heads/main HEAD\n" + "a".repeat(40) + "\trefs/heads/main\n", stderr: "", code: 0 };
+      if (args[0] === "ls-remote")
+        return { stdout: "ref: refs/heads/main HEAD\n" + "a".repeat(40) + "\trefs/heads/main\n", stderr: "", code: 0 };
       if (args[0] === "merge-base") return { stdout: "", stderr: "", code: 1 };
       if (args[0] === "rev-list") return { stdout: "0\n", stderr: "", code: 0 };
       return { stdout: "", stderr: "", code: 0 };
     };
     const repo = new GitRepoImpl(f.work, runner);
-    await repo.lsRemoteHeads("origin"); await repo.fetch("origin"); await repo.isAncestor("a", "b"); await repo.containingBranches("origin", "a"); await repo.countBehind("a", "b");
+    await repo.lsRemoteHeads("origin");
+    await repo.fetch("origin");
+    await repo.isAncestor("a", "b");
+    await repo.containingBranches("origin", "a");
+    await repo.countBehind("a", "b");
     expect(new Set(verbs)).toEqual(new Set(["ls-remote", "fetch", "merge-base", "for-each-ref", "rev-list"]));
   }, 60000);
 });

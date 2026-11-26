@@ -7,6 +7,12 @@ export const incompleteChangesNothing: Oracle = {
   check(world: SimWorld): Violation[] {
     if (world.incompleteSnapshot === null) return [];
     if (world.snapshotStore() === world.incompleteSnapshot) return [];
-    return [{ oracle: "incomplete-changes-nothing", kind: "safety", detail: "incomplete Round changed event, disposition, branch_state, or repo_heads" }];
+    return [
+      {
+        oracle: "incomplete-changes-nothing",
+        kind: "safety",
+        detail: "incomplete Round changed event, disposition, branch_state, or repo_heads",
+      },
+    ];
   },
 };

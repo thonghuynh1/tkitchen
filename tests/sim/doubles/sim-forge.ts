@@ -2,7 +2,9 @@ import { PortError } from "../../../modules/platform/index.ts";
 import type { Forge, PullRequest } from "../../../modules/forge/index.ts";
 import type { RepoConfig } from "../../../modules/config/index.ts";
 
-export interface SimForgeHooks { onPortCall: (method: string) => Promise<void>; }
+export interface SimForgeHooks {
+  onPortCall: (method: string) => Promise<void>;
+}
 
 export class SimForge implements Forge {
   private prs: PullRequest[] = [];
@@ -10,11 +12,20 @@ export class SimForge implements Forge {
   private nextNumber = 1;
   private failNextCall = false;
   private readonly hooks: SimForgeHooks | undefined;
-  constructor(hooks?: SimForgeHooks) { this.hooks = hooks; }
+  constructor(hooks?: SimForgeHooks) {
+    this.hooks = hooks;
+  }
   openPullRequest(input: { head: string; base: string; crossRepository?: boolean; author?: string }): PullRequest {
     const number = this.nextNumber;
     this.nextNumber += 1;
-    const pr: PullRequest = { number, head: input.head, base: input.base, url: "https://example.invalid/pr/" + number, author: input.author ?? "teammate", crossRepository: input.crossRepository ?? false };
+    const pr: PullRequest = {
+      number,
+      head: input.head,
+      base: input.base,
+      url: "https://example.invalid/pr/" + number,
+      author: input.author ?? "teammate",
+      crossRepository: input.crossRepository ?? false,
+    };
     this.prs.push(pr);
     return pr;
   }
@@ -23,16 +34,31 @@ export class SimForge implements Forge {
     if (pr === undefined) throw new Error("no open PR for head " + head);
     pr.base = base;
   }
-  closePullRequests(head: string): void { this.prs = this.prs.filter((p) => p.head !== head); }
-  openPullRequests(): PullRequest[] { return this.prs.map((p) => ({ ...p })); }
-  observedPullRequests(): PullRequest[] { return this.observed.map((p) => ({ ...p })); }
-  failNext(): void { this.failNextCall = true; }
-  get failNextArmed(): boolean { return this.failNextCall; }
-  clearFaults(): void { this.failNextCall = false; }
+  closePullRequests(head: string): void {
+    this.prs = this.prs.filter((p) => p.head !== head);
+  }
+  openPullRequests(): PullRequest[] {
+    return this.prs.map((p) => ({ ...p }));
+  }
+  observedPullRequests(): PullRequest[] {
+    return this.observed.map((p) => ({ ...p }));
+  }
+  failNext(): void {
+    this.failNextCall = true;
+  }
+  get failNextArmed(): boolean {
+    return this.failNextCall;
+  }
+  clearFaults(): void {
+    this.failNextCall = false;
+  }
   async listOpenPullRequests(repo: RepoConfig): Promise<PullRequest[]> {
     void repo;
     await this.hooks?.onPortCall("listOpenPullRequests");
-    if (this.failNextCall) { this.failNextCall = false; throw new PortError("failed", "sim forge failure (seeded)"); }
+    if (this.failNextCall) {
+      this.failNextCall = false;
+      throw new PortError("failed", "sim forge failure (seeded)");
+    }
     this.observed = this.prs.map((p) => ({ ...p }));
     return this.openPullRequests();
   }

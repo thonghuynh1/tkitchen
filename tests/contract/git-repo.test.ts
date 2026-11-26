@@ -15,17 +15,30 @@ class SimScriptedRepo extends SimRemote implements ScriptedGitRepo {
     this.initBranch("main", root);
     this.defaultBranch = "main";
   }
-  advance(branch: string): Promise<string> { return Promise.resolve(this.commitOn(branch)); }
-  branchFrom(name: string, fromBranch: string): Promise<void> { this.createBranch(name, fromBranch); return Promise.resolve(); }
-  branchLocalNamed(name: string, fromBranch: string): Promise<void> { this.createBranch(name, fromBranch); return Promise.resolve(); }
+  advance(branch: string): Promise<string> {
+    return Promise.resolve(this.commitOn(branch));
+  }
+  branchFrom(name: string, fromBranch: string): Promise<void> {
+    this.createBranch(name, fromBranch);
+    return Promise.resolve();
+  }
+  branchLocalNamed(name: string, fromBranch: string): Promise<void> {
+    this.createBranch(name, fromBranch);
+    return Promise.resolve();
+  }
   branchLocalCommit(name: string, fromBranch: string): Promise<string> {
     const oid = this.head(fromBranch);
     if (oid === undefined) throw new Error("unknown branch " + fromBranch);
     this.createBranchFromCommit(name, oid);
     return Promise.resolve(oid);
   }
-  branchOtherMachine(name: string, fromBranch: string): Promise<void> { this.createBranchOtherMachine(name, fromBranch); return Promise.resolve(); }
-  dispose(): Promise<void> { return Promise.resolve(); }
+  branchOtherMachine(name: string, fromBranch: string): Promise<void> {
+    this.createBranchOtherMachine(name, fromBranch);
+    return Promise.resolve();
+  }
+  dispose(): Promise<void> {
+    return Promise.resolve();
+  }
 }
 
 class RealScriptedRepo implements ScriptedGitRepo {
@@ -34,14 +47,33 @@ class RealScriptedRepo implements ScriptedGitRepo {
   private readonly root: string;
   private readonly work: string;
   private counter = 0;
-  constructor(impl: GitRepoImpl, editor: string, root: string, work: string) { this.impl = impl; this.editor = editor; this.root = root; this.work = work; }
-  lsRemoteHeads(remote: string): ReturnType<GitRepoImpl["lsRemoteHeads"]> { return this.impl.lsRemoteHeads(remote); }
-  fetch(remote: string): Promise<void> { return this.impl.fetch(remote); }
-  isAncestor(ancestor: string, descendant: string): Promise<boolean> { return this.impl.isAncestor(ancestor, descendant); }
-  containingBranches(remote: string, branch: string): Promise<string[]> { return this.impl.containingBranches(remote, branch); }
-  countBehind(child: string, base: string): Promise<number> { return this.impl.countBehind(child, base); }
-  creationReflog(branch: string): ReturnType<GitRepoImpl["creationReflog"]> { return this.impl.creationReflog(branch); }
-  tipAt(ref: string, unixSeconds: number): Promise<string | null> { return this.impl.tipAt(ref, unixSeconds); }
+  constructor(impl: GitRepoImpl, editor: string, root: string, work: string) {
+    this.impl = impl;
+    this.editor = editor;
+    this.root = root;
+    this.work = work;
+  }
+  lsRemoteHeads(remote: string): ReturnType<GitRepoImpl["lsRemoteHeads"]> {
+    return this.impl.lsRemoteHeads(remote);
+  }
+  fetch(remote: string): Promise<void> {
+    return this.impl.fetch(remote);
+  }
+  isAncestor(ancestor: string, descendant: string): Promise<boolean> {
+    return this.impl.isAncestor(ancestor, descendant);
+  }
+  containingBranches(remote: string, branch: string): Promise<string[]> {
+    return this.impl.containingBranches(remote, branch);
+  }
+  countBehind(child: string, base: string): Promise<number> {
+    return this.impl.countBehind(child, base);
+  }
+  creationReflog(branch: string): ReturnType<GitRepoImpl["creationReflog"]> {
+    return this.impl.creationReflog(branch);
+  }
+  tipAt(ref: string, unixSeconds: number): Promise<string | null> {
+    return this.impl.tipAt(ref, unixSeconds);
+  }
   async advance(branch: string): Promise<string> {
     this.counter += 1;
     await git(this.editor, "fetch", "origin");
@@ -69,8 +101,13 @@ class RealScriptedRepo implements ScriptedGitRepo {
     await git(this.work, "push", "origin", name);
     return oid;
   }
-  async branchOtherMachine(name: string, fromBranch: string): Promise<void> { await this.branchFrom(name, fromBranch); }
-  dispose(): Promise<void> { rmSync(this.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); return Promise.resolve(); }
+  async branchOtherMachine(name: string, fromBranch: string): Promise<void> {
+    await this.branchFrom(name, fromBranch);
+  }
+  dispose(): Promise<void> {
+    rmSync(this.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    return Promise.resolve();
+  }
 }
 
 async function makeReal(): Promise<ScriptedGitRepo> {

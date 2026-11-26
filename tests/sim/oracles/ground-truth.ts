@@ -2,12 +2,15 @@ import type { BranchState } from "../../../modules/branches/index.ts";
 import type { Oracle, Violation } from "./oracle.ts";
 import type { SimWorld } from "../world/world.ts";
 
-interface Expected { base: string | null; status: string; behindBy: number | null; headOid: string; baseOid: string | null; }
+interface Expected {
+  base: string | null;
+  status: string;
+  behindBy: number | null;
+  headOid: string;
+  baseOid: string | null;
+}
 
-type OwnResult =
-  | { kind: "base"; base: string }
-  | { kind: "needs_base" }
-  | { kind: "ambiguous"; reason: string };
+type OwnResult = { kind: "base"; base: string } | { kind: "needs_base" } | { kind: "ambiguous"; reason: string };
 
 function descendantsOf(branch: string, bases: Readonly<Record<string, string>>): Set<string> {
   const out = new Set<string>();
@@ -15,7 +18,10 @@ function descendantsOf(branch: string, bases: Readonly<Record<string, string>>):
   while (changed) {
     changed = false;
     for (const [child, base] of Object.entries(bases)) {
-      if ((base === branch || out.has(base)) && !out.has(child) && child !== branch) { out.add(child); changed = true; }
+      if ((base === branch || out.has(base)) && !out.has(child) && child !== branch) {
+        out.add(child);
+        changed = true;
+      }
     }
   }
   return out;
@@ -23,8 +29,14 @@ function descendantsOf(branch: string, bases: Readonly<Record<string, string>>):
 
 function ownResolve(world: SimWorld, branch: string, heads: ReadonlyMap<string, string>): OwnResult {
   const remote = world.remote;
-  const prTargets = [...new Set(world.forge.observedPullRequests().filter((p) => p.head === branch && !p.crossRepository).map((p) => p.base))]
-    .filter((t) => t !== branch && heads.has(t));
+  const prTargets = [
+    ...new Set(
+      world.forge
+        .observedPullRequests()
+        .filter((p) => p.head === branch && !p.crossRepository)
+        .map((p) => p.base),
+    ),
+  ].filter((t) => t !== branch && heads.has(t));
   if (prTargets.length > 1) return { kind: "ambiguous", reason: "multiple_prs" };
   const pr = prTargets[0] ?? null;
   const explicitRaw = world.config.repo.bases[branch];
@@ -34,8 +46,15 @@ function ownResolve(world: SimWorld, branch: string, heads: ReadonlyMap<string, 
   if (pr !== null) return { kind: "base", base: pr };
   const creation = remote.creationRecord(branch);
   if (creation === null) return { kind: "needs_base" };
-  if (creation.createdFrom === creation.oid || (/^[0-9a-f]{7,40}$/i.test(creation.createdFrom) && creation.oid.toLowerCase().startsWith(creation.createdFrom.toLowerCase()))) {
-    const candidates = [...heads.keys()].filter((c) => c !== branch).sort().slice(0, 200);
+  if (
+    creation.createdFrom === creation.oid ||
+    (/^[0-9a-f]{7,40}$/i.test(creation.createdFrom) &&
+      creation.oid.toLowerCase().startsWith(creation.createdFrom.toLowerCase()))
+  ) {
+    const candidates = [...heads.keys()]
+      .filter((c) => c !== branch)
+      .sort()
+      .slice(0, 200);
     const matches = candidates.filter((c) => remote.tipAtBranch(c, creation.unixSeconds) === creation.oid);
     if (matches.length !== 1) return { kind: "needs_base" };
     const only = matches[0];
@@ -84,7 +103,8 @@ function expectedStates(world: SimWorld): Map<string, Expected> {
   const heads = remote.observedHeads.size > 0 ? remote.observedHeads : remote.branches;
   const isAnc = (a: string, b: string): boolean => {
     if (a === b) return true;
-    const ha = heads.get(a); const hb = heads.get(b);
+    const ha = heads.get(a);
+    const hb = heads.get(b);
     if (ha !== undefined && ha === hb) return true;
     if (ha === undefined || hb === undefined) return false;
     return remote.isAncestorOid(ha, hb);
@@ -112,7 +132,10 @@ function expectedStates(world: SimWorld): Map<string, Expected> {
     let mergedElsewhere = false;
     for (const other of heads.keys()) {
       if (other === branch || descendants.has(other)) continue;
-      if (isAnc(branch, other)) { mergedElsewhere = true; break; }
+      if (isAnc(branch, other)) {
+        mergedElsewhere = true;
+        break;
+      }
     }
     if (mergedElsewhere) continue;
     if (result.kind !== "base") {
@@ -122,7 +145,13 @@ function expectedStates(world: SimWorld): Map<string, Expected> {
     const baseHead = heads.get(result.base);
     if (baseHead === undefined) continue;
     const behindBy = remote.countBehindOids(branchHead, baseHead);
-    expected.set(branch, { base: result.base, status: behindBy > 0 ? "behind" : "up_to_date", behindBy, headOid: branchHead, baseOid: baseHead });
+    expected.set(branch, {
+      base: result.base,
+      status: behindBy > 0 ? "behind" : "up_to_date",
+      behindBy,
+      headOid: branchHead,
+      baseOid: baseHead,
+    });
   }
   return expected;
 }
@@ -134,16 +163,65 @@ export const groundTruth: Oracle = {
     const violations: Violation[] = [];
     const expected = expectedStates(world);
     const actual = new Map<string, BranchState>();
-    for (const state of world.store.listBranchStates()) if (state.repo === world.repoName) actual.set(state.branch, state);
+    for (const state of world.store.listBranchStates())
+      if (state.repo === world.repoName) actual.set(state.branch, state);
     for (const [branch, want] of expected) {
       const got = actual.get(branch);
-      if (got === undefined) { violations.push({ oracle: "ground-truth", kind: "safety", detail: "missing branch_state for " + branch + " expected base=" + want.base + " status=" + want.status + " behindBy=" + want.behindBy }); continue; }
-      if (got.base !== want.base || got.status !== want.status || got.behindBy !== want.behindBy || got.headOid !== want.headOid || got.baseOid !== want.baseOid) {
-        violations.push({ oracle: "ground-truth", kind: "safety", detail: branch + " expected {base:" + want.base + ",status:" + want.status + ",behindBy:" + want.behindBy + ",headOid:" + want.headOid + ",baseOid:" + want.baseOid + "} got {base:" + String(got.base) + ",status:" + got.status + ",behindBy:" + String(got.behindBy) + ",headOid:" + got.headOid + ",baseOid:" + String(got.baseOid) + "}" });
+      if (got === undefined) {
+        violations.push({
+          oracle: "ground-truth",
+          kind: "safety",
+          detail:
+            "missing branch_state for " +
+            branch +
+            " expected base=" +
+            want.base +
+            " status=" +
+            want.status +
+            " behindBy=" +
+            want.behindBy,
+        });
+        continue;
+      }
+      if (
+        got.base !== want.base ||
+        got.status !== want.status ||
+        got.behindBy !== want.behindBy ||
+        got.headOid !== want.headOid ||
+        got.baseOid !== want.baseOid
+      ) {
+        violations.push({
+          oracle: "ground-truth",
+          kind: "safety",
+          detail:
+            branch +
+            " expected {base:" +
+            want.base +
+            ",status:" +
+            want.status +
+            ",behindBy:" +
+            want.behindBy +
+            ",headOid:" +
+            want.headOid +
+            ",baseOid:" +
+            want.baseOid +
+            "} got {base:" +
+            String(got.base) +
+            ",status:" +
+            got.status +
+            ",behindBy:" +
+            String(got.behindBy) +
+            ",headOid:" +
+            got.headOid +
+            ",baseOid:" +
+            String(got.baseOid) +
+            "}",
+        });
       }
     }
     for (const branch of actual.keys()) {
-      if (!expected.has(branch)) violations.push({ oracle: "ground-truth", kind: "safety", detail: "extra branch_state for " + branch });
+      if (!expected.has(branch))
+        violations.push({ oracle: "ground-truth", kind: "safety", detail: "extra branch_state for " + branch });
     }
     return violations;
   },

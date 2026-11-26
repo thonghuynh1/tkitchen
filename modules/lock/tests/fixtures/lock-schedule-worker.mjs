@@ -9,24 +9,35 @@ const lockPath = join(home, "kitchen.lock");
 const takeoverPath = join(home, "kitchen.lock.takeover");
 
 if (mode === "recoverer") {
-  let pausedLink = false; let pausedRm = false; let pausedUnlink = false;
+  let pausedLink = false;
+  let pausedRm = false;
+  let pausedUnlink = false;
   const originalLink = fs.link;
   fs.link = async (...args) => {
     try {
       return await originalLink(...args);
     } catch (e) {
-      if (!pausedLink && String(args[1]) === takeoverPath && e.code === "EEXIST") { pausedLink = true; await pause("r-claim-exists"); }
+      if (!pausedLink && String(args[1]) === takeoverPath && e.code === "EEXIST") {
+        pausedLink = true;
+        await pause("r-claim-exists");
+      }
       throw e;
     }
   };
   const originalRm = fs.rm;
   fs.rm = async (...args) => {
-    if (!pausedRm && String(args[0]) === takeoverPath) { pausedRm = true; await pause("r-before-rm-claim"); }
+    if (!pausedRm && String(args[0]) === takeoverPath) {
+      pausedRm = true;
+      await pause("r-before-rm-claim");
+    }
     return originalRm(...args);
   };
   const originalUnlink = fs.unlink;
   fs.unlink = async (...args) => {
-    if (!pausedUnlink && String(args[0]) === lockPath) { pausedUnlink = true; await pause("r-before-unlink-lock"); }
+    if (!pausedUnlink && String(args[0]) === lockPath) {
+      pausedUnlink = true;
+      await pause("r-before-unlink-lock");
+    }
     return originalUnlink(...args);
   };
 } else if (mode === "publisher") {
@@ -34,7 +45,10 @@ if (mode === "recoverer") {
   const originalLink = fs.link;
   fs.link = async (...args) => {
     const r = await originalLink(...args);
-    if (!paused && String(args[1]) === takeoverPath) { paused = true; await pause("p-claim-won"); }
+    if (!paused && String(args[1]) === takeoverPath) {
+      paused = true;
+      await pause("p-claim-won");
+    }
     return r;
   };
 }

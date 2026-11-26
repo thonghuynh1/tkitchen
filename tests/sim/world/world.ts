@@ -12,8 +12,15 @@ import { VirtualClock } from "./clock.ts";
 import { SeededIds, SeededRandom } from "./rng.ts";
 import { Trace } from "./trace.ts";
 
-export interface QuietDelta { events: number; dispositions: number; }
-export interface ExportGeneration { ids: string[]; seqs: number[]; storeIds: string[]; }
+export interface QuietDelta {
+  events: number;
+  dispositions: number;
+}
+export interface ExportGeneration {
+  ids: string[];
+  seqs: number[];
+  storeIds: string[];
+}
 
 const REMOTE = "origin";
 const REPO = "sim";
@@ -63,7 +70,11 @@ export class SimWorld {
         await this.clock.sleep(1);
       },
     });
-    setGitProcessGuard({ onCall: (args: string[]): void => { this.noteRealGit(args); } });
+    setGitProcessGuard({
+      onCall: (args: string[]): void => {
+        this.noteRealGit(args);
+      },
+    });
     this.throwingGitRunner = (args: string[]): Promise<never> => {
       this.noteRealGit(args);
       throw new Error("real git runner called inside a sim: git " + args.join(" "));
@@ -73,9 +84,16 @@ export class SimWorld {
     this.remote.defaultBranch = "main";
     this.trace.record(this.clock.nowMs(), "world.init", "seed=" + seed + " root=" + root);
   }
-  get repoName(): string { return REPO; }
+  get repoName(): string {
+    return REPO;
+  }
   snapshotStore(): string {
-    return JSON.stringify({ events: this.store.listTriggers(), dispositions: this.store.listDispositions(), branchStates: this.store.listBranchStates(), heads: this.store.listRepoHeadRows() });
+    return JSON.stringify({
+      events: this.store.listTriggers(),
+      dispositions: this.store.listDispositions(),
+      branchStates: this.store.listBranchStates(),
+      heads: this.store.listRepoHeadRows(),
+    });
   }
   noteRealGit(args: string[]): void {
     this.realGitCalls += 1;
@@ -87,7 +105,11 @@ export class SimWorld {
     this.dirs.push(this.dir);
     this.store = new SimStore(new KitchenStore(join(this.dir, "kitchen.db")));
     this.exportGenerations.push({ ids: [], seqs: [], storeIds: [] });
-    this.trace.record(this.clock.nowMs(), "world.replace-store", "fresh store generation " + this.exportGenerations.length);
+    this.trace.record(
+      this.clock.nowMs(),
+      "world.replace-store",
+      "fresh store generation " + this.exportGenerations.length,
+    );
   }
   currentExportGeneration(): ExportGeneration {
     const gen = this.exportGenerations[this.exportGenerations.length - 1];

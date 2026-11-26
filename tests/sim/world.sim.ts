@@ -26,7 +26,9 @@ describe("sim world determinism", () => {
 
   it("leak is detected", async () => {
     const runLeaky = async (): Promise<string> => {
-      await new Promise<void>((resolve) => { setTimeout(resolve, 10); });
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 10);
+      });
       const trace = new Trace();
       trace.record(0, "leak.commit", "oid-" + Date.now());
       return trace.hash();

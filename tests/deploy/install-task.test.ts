@@ -9,7 +9,11 @@ import { promisify } from "node:util";
 const run = promisify(execFile);
 const onWindows = process.platform === "win32";
 
-interface Result { stdout: string; stderr: string; code: number }
+interface Result {
+  stdout: string;
+  stderr: string;
+  code: number;
+}
 
 async function powershell(script: string, ...args: string[]): Promise<Result> {
   try {
@@ -17,7 +21,11 @@ async function powershell(script: string, ...args: string[]): Promise<Result> {
     return { stdout: r.stdout.toString(), stderr: r.stderr.toString(), code: 0 };
   } catch (e) {
     const err = e as { stdout?: unknown; stderr?: unknown; code?: unknown };
-    return { stdout: String(err.stdout ?? ""), stderr: String(err.stderr ?? ""), code: typeof err.code === "number" ? err.code : 1 };
+    return {
+      stdout: String(err.stdout ?? ""),
+      stderr: String(err.stderr ?? ""),
+      code: typeof err.code === "number" ? err.code : 1,
+    };
   }
 }
 
@@ -27,7 +35,11 @@ async function schtasksQuery(taskName: string): Promise<Result> {
     return { stdout: r.stdout.toString(), stderr: r.stderr.toString(), code: 0 };
   } catch (e) {
     const err = e as { stdout?: unknown; stderr?: unknown; code?: unknown };
-    return { stdout: String(err.stdout ?? ""), stderr: String(err.stderr ?? ""), code: typeof err.code === "number" ? err.code : 1 };
+    return {
+      stdout: String(err.stdout ?? ""),
+      stderr: String(err.stderr ?? ""),
+      code: typeof err.code === "number" ? err.code : 1,
+    };
   }
 }
 
@@ -63,7 +75,10 @@ describe.skipIf(!onWindows)("deploy/windows scheduled task", () => {
     const xml = readFileSync(exportPath, "utf8");
     expect((xml.match(/<LogonTrigger>/g) ?? []).length).toBe(1);
     expect(xml).not.toContain("BootTrigger");
-    expect(elements(xml, "UserId")).toEqual([process.env["USERDOMAIN"] + "\\" + process.env["USERNAME"], process.env["USERDOMAIN"] + "\\" + process.env["USERNAME"]]);
+    expect(elements(xml, "UserId")).toEqual([
+      process.env["USERDOMAIN"] + "\\" + process.env["USERNAME"],
+      process.env["USERDOMAIN"] + "\\" + process.env["USERNAME"],
+    ]);
     expect(element(xml, "LogonType")).toBe("InteractiveToken");
     expect(element(xml, "RunLevel")).toBe("LeastPrivilege");
     expect(element(xml, "Command").endsWith("node.exe")).toBe(true);

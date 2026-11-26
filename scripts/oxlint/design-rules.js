@@ -6,7 +6,14 @@ const AVOID_LINE = /^_Avoid_:\s*(.+)$/;
 const ID_NAME = /(^id|Id)$/;
 const MODULE_ENTRY = /[\\/]modules[\\/][^\\/]+[\\/](index|adapters)\.ts$/;
 const BARE_ID_TYPES = new Set(["TSStringKeyword", "TSNumberKeyword"]);
-const FUNCTION_TYPES = new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression", "TSDeclareFunction", "TSMethodSignature", "TSFunctionType"]);
+const FUNCTION_TYPES = new Set([
+  "FunctionDeclaration",
+  "FunctionExpression",
+  "ArrowFunctionExpression",
+  "TSDeclareFunction",
+  "TSMethodSignature",
+  "TSFunctionType",
+]);
 
 export function avoidedTerms(text) {
   const terms = [];
@@ -78,7 +85,8 @@ function allowedCast(node) {
 
 function reExportSource(statement) {
   if (statement.type === "ExportAllDeclaration") return statement.source.value;
-  if (statement.type === "ExportNamedDeclaration" && statement.source && !statement.declaration) return statement.source.value;
+  if (statement.type === "ExportNamedDeclaration" && statement.source && !statement.declaration)
+    return statement.source.value;
   if (statement.type === "ImportDeclaration") return statement.source.value;
   if (statement.type === "ExportNamedDeclaration" && !statement.source && !statement.declaration) return null;
   return undefined;
@@ -93,7 +101,7 @@ const contextTermsRule = {
     type: "suggestion",
     docs: { description: "Disallow identifiers that use a word CONTEXT.md lists under _Avoid_." },
     schema: [],
-    messages: { avoided: "\"{{name}}\" uses \"{{phrase}}\", which CONTEXT.md avoids; the term is {{term}}." },
+    messages: { avoided: '"{{name}}" uses "{{phrase}}", which CONTEXT.md avoids; the term is {{term}}.' },
   },
   create(context) {
     const terms = contextTerms();
@@ -101,7 +109,12 @@ const contextTermsRule = {
       const id = declaredName(node);
       if (!id) return;
       const found = avoidedIn(id.name, terms);
-      if (found) context.report({ node: id, messageId: "avoided", data: { name: id.name, phrase: found.phrase, term: found.term } });
+      if (found)
+        context.report({
+          node: id,
+          messageId: "avoided",
+          data: { name: id.name, phrase: found.phrase, term: found.term },
+        });
     }
     function checkKey(node) {
       if (!node.computed) check(node.key);
@@ -111,7 +124,10 @@ const contextTermsRule = {
     }
     return {
       VariableDeclarator: (node) => check(node.id),
-      FunctionDeclaration: (node) => { check(node.id); checkParams(node); },
+      FunctionDeclaration: (node) => {
+        check(node.id);
+        checkParams(node);
+      },
       FunctionExpression: checkParams,
       ArrowFunctionExpression: checkParams,
       ClassDeclaration: (node) => check(node.id),
@@ -121,7 +137,10 @@ const contextTermsRule = {
       TSPropertySignature: checkKey,
       PropertyDefinition: checkKey,
       MethodDefinition: checkKey,
-      TSMethodSignature: (node) => { checkKey(node); checkParams(node); },
+      TSMethodSignature: (node) => {
+        checkKey(node);
+        checkParams(node);
+      },
     };
   },
 };
@@ -169,22 +188,28 @@ const brandedIdsRule = {
     type: "suggestion",
     docs: { description: "Disallow bare string or number for exported *Id types and *Id parameters." },
     schema: [],
-    messages: { bare: "\"{{name}}\" is a bare {{type}}; give the id a branded type." },
+    messages: { bare: '"{{name}}" is a bare {{type}}; give the id a branded type.' },
   },
   create(context) {
     function report(node, name, type) {
-      context.report({ node, messageId: "bare", data: { name, type: type === "TSStringKeyword" ? "string" : "number" } });
+      context.report({
+        node,
+        messageId: "bare",
+        data: { name, type: type === "TSStringKeyword" ? "string" : "number" },
+      });
     }
     function checkParams(node) {
       for (const param of node.params ?? []) {
         const id = declaredName(param);
-        if (id && ID_NAME.test(id.name) && bareType(id.typeAnnotation)) report(id, id.name, id.typeAnnotation.typeAnnotation.type);
+        if (id && ID_NAME.test(id.name) && bareType(id.typeAnnotation))
+          report(id, id.name, id.typeAnnotation.typeAnnotation.type);
       }
     }
     const visitors = {
       TSTypeAliasDeclaration(node) {
         if (node.parent?.type !== "ExportNamedDeclaration") return;
-        if (ID_NAME.test(node.id.name) && BARE_ID_TYPES.has(node.typeAnnotation.type)) report(node.id, node.id.name, node.typeAnnotation.type);
+        if (ID_NAME.test(node.id.name) && BARE_ID_TYPES.has(node.typeAnnotation.type))
+          report(node.id, node.id.name, node.typeAnnotation.type);
       },
     };
     for (const type of FUNCTION_TYPES) visitors[type] = checkParams;

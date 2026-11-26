@@ -4,8 +4,13 @@ import type { Ids } from "../../../modules/platform/index.ts";
 import { GitFaultInjector } from "../faults/git-faults.ts";
 import type { GitFaultKind, GitMethod } from "../faults/git-faults.ts";
 
-export interface SimCommit { oid: string; parents: string[]; }
-export interface SimRemoteHooks { onPortCall: (method: string) => Promise<void>; }
+export interface SimCommit {
+  oid: string;
+  parents: string[];
+}
+export interface SimRemoteHooks {
+  onPortCall: (method: string) => Promise<void>;
+}
 
 const REF_PREFIX = "refs/remotes/";
 
@@ -21,21 +26,38 @@ export class SimRemote implements GitRepo {
   private fetched = new Map<string, string>();
   defaultBranch: string | null = null;
   readonly faults = new GitFaultInjector();
-  failNextGit(method: GitMethod | "*" = "*", kind: GitFaultKind = "failed"): void { this.faults.arm(method, kind); }
-  timeoutNextGit(method: GitMethod | "*" = "*"): void { this.faults.arm(method, "timeout"); }
-  clearGitFaults(): void { this.faults.clear(); }
-  get gitFaultArmed(): boolean { return this.faults.isArmed; }
-  private throwIfFaulted(method: string): void { const err = this.faults.consume(method); if (err !== null) throw err; }
+  failNextGit(method: GitMethod | "*" = "*", kind: GitFaultKind = "failed"): void {
+    this.faults.arm(method, kind);
+  }
+  timeoutNextGit(method: GitMethod | "*" = "*"): void {
+    this.faults.arm(method, "timeout");
+  }
+  clearGitFaults(): void {
+    this.faults.clear();
+  }
+  get gitFaultArmed(): boolean {
+    return this.faults.isArmed;
+  }
+  private throwIfFaulted(method: string): void {
+    const err = this.faults.consume(method);
+    if (err !== null) throw err;
+  }
   private readonly ids: Ids;
   private readonly hooks: SimRemoteHooks;
-  constructor(ids: Ids, hooks: SimRemoteHooks) { this.ids = ids; this.hooks = hooks; }
+  constructor(ids: Ids, hooks: SimRemoteHooks) {
+    this.ids = ids;
+    this.hooks = hooks;
+  }
 
   createCommit(parents: string[]): string {
     const oid = this.ids.next();
     this.commits.set(oid, { oid, parents: [...parents] });
     return oid;
   }
-  private tick(): number { this.logicalTime += 1; return this.logicalTime; }
+  private tick(): number {
+    this.logicalTime += 1;
+    return this.logicalTime;
+  }
   private recordTip(branch: string, oid: string): number {
     const at = this.tick();
     const list = this.tipHistory.get(branch) ?? [];
@@ -84,7 +106,10 @@ export class SimRemote implements GitRepo {
     for (const entry of list) if (entry.at <= unixSeconds) found = entry.oid;
     return found;
   }
-  deleteBranch(name: string): void { this.branches.delete(name); this.creations.delete(name); }
+  deleteBranch(name: string): void {
+    this.branches.delete(name);
+    this.creations.delete(name);
+  }
   forcePush(name: string, oid: string): void {
     if (!this.commits.has(oid)) throw new Error("unknown commit " + oid);
     this.branches.set(name, oid);
@@ -96,11 +121,19 @@ export class SimRemote implements GitRepo {
     const out: string[] = [];
     const seen = new Set<string>();
     let current: string | undefined = head;
-    while (current !== undefined && !seen.has(current)) { seen.add(current); out.push(current); current = this.commits.get(current)?.parents[0]; }
+    while (current !== undefined && !seen.has(current)) {
+      seen.add(current);
+      out.push(current);
+      current = this.commits.get(current)?.parents[0];
+    }
     return out;
   }
-  head(branch: string): string | undefined { return this.branches.get(branch); }
-  branchNames(): string[] { return [...this.branches.keys()].sort(); }
+  head(branch: string): string | undefined {
+    return this.branches.get(branch);
+  }
+  branchNames(): string[] {
+    return [...this.branches.keys()].sort();
+  }
   ancestorsOf(oid: string): Set<string> {
     const seen = new Set<string>();
     const stack = [oid];
@@ -113,7 +146,9 @@ export class SimRemote implements GitRepo {
     }
     return seen;
   }
-  isAncestorOid(ancestor: string, descendant: string): boolean { return this.ancestorsOf(descendant).has(ancestor); }
+  isAncestorOid(ancestor: string, descendant: string): boolean {
+    return this.ancestorsOf(descendant).has(ancestor);
+  }
   countBehindOids(childOid: string, baseOid: string): number {
     const childAncestors = this.ancestorsOf(childOid);
     let count = 0;
@@ -136,7 +171,9 @@ export class SimRemote implements GitRepo {
     return oid;
   }
 
-  fetchedHeads(): Map<string, string> { return new Map(this.fetched); }
+  fetchedHeads(): Map<string, string> {
+    return new Map(this.fetched);
+  }
   async lsRemoteHeads(remote: string): Promise<{ heads: Map<string, string>; defaultBranch: string | null }> {
     await this.hooks.onPortCall("lsRemoteHeads");
     this.throwIfFaulted("lsRemoteHeads");
@@ -162,7 +199,10 @@ export class SimRemote implements GitRepo {
     await this.hooks.onPortCall("containingBranches");
     this.throwIfFaulted("containingBranches");
     const oid = this.fetchedOid(REF_PREFIX + remote + "/" + branch);
-    return [...this.fetched].filter(([, tip]) => this.isAncestorOid(oid, tip)).map(([name]) => name).sort();
+    return [...this.fetched]
+      .filter(([, tip]) => this.isAncestorOid(oid, tip))
+      .map(([name]) => name)
+      .sort();
   }
   async countBehind(child: string, base: string): Promise<number> {
     await this.hooks.onPortCall("countBehind");

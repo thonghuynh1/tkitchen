@@ -13,13 +13,20 @@ const FAKE_GH_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "fixture
 
 class SimScriptedForge extends SimForge implements ScriptedForge {
   open(pr: PullRequest): void {
-    const created = this.openPullRequest({ head: pr.head, base: pr.base, crossRepository: pr.crossRepository, author: pr.author });
+    const created = this.openPullRequest({
+      head: pr.head,
+      base: pr.base,
+      crossRepository: pr.crossRepository,
+      author: pr.author,
+    });
     created.number = pr.number;
     created.url = pr.url;
     const all = this.openPullRequests();
     void all;
   }
-  dispose(): void { return; }
+  dispose(): void {
+    return;
+  }
 }
 
 class FakeGhForge implements ScriptedForge {
@@ -32,21 +39,44 @@ class FakeGhForge implements ScriptedForge {
     this.dir = mkdtempSync(join(tmpdir(), "tkitchen-fakegh-"));
     this.prsFile = join(this.dir, "prs.json");
     writeFileSync(this.prsFile, "[]");
-    this.saved = { path: process.env["PATH"], prsFile: process.env["FAKE_GH_PRS_FILE"], fail: process.env["FAKE_GH_FAIL"] };
+    this.saved = {
+      path: process.env["PATH"],
+      prsFile: process.env["FAKE_GH_PRS_FILE"],
+      fail: process.env["FAKE_GH_FAIL"],
+    };
     process.env["PATH"] = FAKE_GH_DIR + delimiter + (this.saved.path ?? "");
     process.env["FAKE_GH_PRS_FILE"] = this.prsFile;
     delete process.env["FAKE_GH_FAIL"];
   }
   open(pr: PullRequest): void {
     this.prs.push(pr);
-    writeFileSync(this.prsFile, JSON.stringify(this.prs.map((p) => ({ number: p.number, headRefName: p.head, baseRefName: p.base, url: p.url, author: { login: p.author }, isCrossRepository: p.crossRepository }))));
+    writeFileSync(
+      this.prsFile,
+      JSON.stringify(
+        this.prs.map((p) => ({
+          number: p.number,
+          headRefName: p.head,
+          baseRefName: p.base,
+          url: p.url,
+          author: { login: p.author },
+          isCrossRepository: p.crossRepository,
+        })),
+      ),
+    );
   }
-  failNext(): void { process.env["FAKE_GH_FAIL"] = "1"; }
-  listOpenPullRequests(repo: RepoConfig): Promise<PullRequest[]> { return this.inner.listOpenPullRequests({ ...repo, path: this.dir }); }
+  failNext(): void {
+    process.env["FAKE_GH_FAIL"] = "1";
+  }
+  listOpenPullRequests(repo: RepoConfig): Promise<PullRequest[]> {
+    return this.inner.listOpenPullRequests({ ...repo, path: this.dir });
+  }
   dispose(): void {
-    if (this.saved.path === undefined) delete process.env["PATH"]; else process.env["PATH"] = this.saved.path;
-    if (this.saved.prsFile === undefined) delete process.env["FAKE_GH_PRS_FILE"]; else process.env["FAKE_GH_PRS_FILE"] = this.saved.prsFile;
-    if (this.saved.fail === undefined) delete process.env["FAKE_GH_FAIL"]; else process.env["FAKE_GH_FAIL"] = this.saved.fail;
+    if (this.saved.path === undefined) delete process.env["PATH"];
+    else process.env["PATH"] = this.saved.path;
+    if (this.saved.prsFile === undefined) delete process.env["FAKE_GH_PRS_FILE"];
+    else process.env["FAKE_GH_PRS_FILE"] = this.saved.prsFile;
+    if (this.saved.fail === undefined) delete process.env["FAKE_GH_FAIL"];
+    else process.env["FAKE_GH_FAIL"] = this.saved.fail;
     rmSync(this.dir, { recursive: true, force: true });
   }
 }

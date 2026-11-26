@@ -5,11 +5,18 @@ import type { Config, KitchenConfig, RepoConfig } from "../contract.ts";
 import { kitchenHome } from "../../../platform/adapters.ts";
 import { FORGE_KINDS } from "../../../forge/adapters.ts";
 
-export class ConfigError extends Error { constructor(message: string) { super(message); this.name = "ConfigError"; } }
+export class ConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ConfigError";
+  }
+}
 const TIMEOUT_MS = 20000;
 const DEFAULT_ROUND_MINUTES = 15;
 
-function isRecord(v: unknown): v is Record<string, unknown> { return typeof v === "object" && v !== null && !Array.isArray(v); }
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
 function reqString(obj: Record<string, unknown>, field: string, label: string): string {
   const v = obj[field];
   if (typeof v !== "string" || v === "") throw new ConfigError(label + " must be a non-empty string");
@@ -33,20 +40,34 @@ function parseBases(v: unknown, label: string): Record<string, string> {
 }
 function isGitWorkTree(path: string): Promise<boolean> {
   return new Promise((resolve) => {
-    execFile("git", ["-C", path, "rev-parse", "--is-inside-work-tree"], { env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }, timeout: TIMEOUT_MS }, (err, stdout) => {
-      resolve(err === null && stdout.trim() === "true");
-    });
+    execFile(
+      "git",
+      ["-C", path, "rev-parse", "--is-inside-work-tree"],
+      { env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }, timeout: TIMEOUT_MS },
+      (err, stdout) => {
+        resolve(err === null && stdout.trim() === "true");
+      },
+    );
   });
 }
 export class FileConfig implements Config {
   readonly configPath: string;
-  constructor(home?: string) { this.configPath = join(home ?? kitchenHome(), "config.json"); }
+  constructor(home?: string) {
+    this.configPath = join(home ?? kitchenHome(), "config.json");
+  }
   async load(): Promise<KitchenConfig> {
     let raw: string;
-    try { raw = await readFile(this.configPath, "utf8"); }
-    catch { throw new ConfigError("config file not found: " + this.configPath); }
+    try {
+      raw = await readFile(this.configPath, "utf8");
+    } catch {
+      throw new ConfigError("config file not found: " + this.configPath);
+    }
     let parsed: unknown;
-    try { parsed = JSON.parse(raw); } catch { throw new ConfigError("config file is not valid JSON: " + this.configPath); }
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new ConfigError("config file is not valid JSON: " + this.configPath);
+    }
     if (!isRecord(parsed)) throw new ConfigError("config file must be an object: " + this.configPath);
     const reposRaw = parsed["repos"];
     if (!Array.isArray(reposRaw)) throw new ConfigError("repos must be an array in " + this.configPath);
@@ -62,12 +83,15 @@ export class FileConfig implements Config {
         forge: optString(item, "forge", label + ".forge", "github"),
         bases: parseBases(item["bases"], label + ".bases"),
       };
-      if (!FORGE_KINDS.includes(repo.forge)) throw new ConfigError(label + ".forge must be one of " + FORGE_KINDS.join(", ") + ": " + repo.forge);
-      if (!(await isGitWorkTree(repo.path))) throw new ConfigError(label + ".path is not a git work tree: " + repo.path);
+      if (!FORGE_KINDS.includes(repo.forge))
+        throw new ConfigError(label + ".forge must be one of " + FORGE_KINDS.join(", ") + ": " + repo.forge);
+      if (!(await isGitWorkTree(repo.path)))
+        throw new ConfigError(label + ".path is not a git work tree: " + repo.path);
       repos.push(repo);
     }
     const rm = parsed["roundMinutes"];
-    if (rm !== undefined && (typeof rm !== "number" || !(rm > 0))) throw new ConfigError("roundMinutes must be a positive number");
+    if (rm !== undefined && (typeof rm !== "number" || !(rm > 0)))
+      throw new ConfigError("roundMinutes must be a positive number");
     return { repos, roundMinutes: rm ?? DEFAULT_ROUND_MINUTES };
   }
 }

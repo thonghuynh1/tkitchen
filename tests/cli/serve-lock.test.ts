@@ -9,8 +9,16 @@ import { cli, git } from "../helpers.ts";
 
 const FAKE_GH_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "fake-gh");
 
-interface Fixture { home: string; work: string; lockPath: string; }
-interface Running { child: ChildProcess; output: () => string; exited: Promise<number | null>; }
+interface Fixture {
+  home: string;
+  work: string;
+  lockPath: string;
+}
+interface Running {
+  child: ChildProcess;
+  output: () => string;
+  exited: Promise<number | null>;
+}
 
 async function makeFixture(): Promise<Fixture> {
   const root = mkdtempSync(join(tmpdir(), "tk-serve-"));
@@ -27,18 +35,37 @@ async function makeFixture(): Promise<Fixture> {
   await git(work, "add", ".");
   await git(work, "commit", "-m", "main");
   await git(work, "push", "-u", "origin", "main");
-  writeFileSync(join(home, "config.json"), JSON.stringify({ repos: [{ name: "x", path: work, bases: {} }], roundMinutes: 60 }));
+  writeFileSync(
+    join(home, "config.json"),
+    JSON.stringify({ repos: [{ name: "x", path: work, bases: {} }], roundMinutes: 60 }),
+  );
   return { home, work, lockPath: join(home, "kitchen.lock") };
 }
 
 function startServe(f: Fixture): Running {
-  const env: Record<string, string | undefined> = { ...process.env, TKITCHEN_HOME: f.home, PATH: FAKE_GH_DIR + delimiter + (process.env["PATH"] ?? "") };
+  const env: Record<string, string | undefined> = {
+    ...process.env,
+    TKITCHEN_HOME: f.home,
+    PATH: FAKE_GH_DIR + delimiter + (process.env["PATH"] ?? ""),
+  };
   env["FAKE_GH_PRS_FILE"] = join(FAKE_GH_DIR, "prs.json");
-  const child = spawn(process.execPath, ["cli/tkitchen.ts", "serve"], { cwd: process.cwd(), env, stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn(process.execPath, ["cli/tkitchen.ts", "serve"], {
+    cwd: process.cwd(),
+    env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
   let out = "";
-  child.stdout?.on("data", (d: Buffer) => { out += d.toString(); });
-  child.stderr?.on("data", (d: Buffer) => { out += d.toString(); });
-  const exited = new Promise<number | null>((resolve) => { child.on("exit", (code) => { resolve(code); }); });
+  child.stdout?.on("data", (d: Buffer) => {
+    out += d.toString();
+  });
+  child.stderr?.on("data", (d: Buffer) => {
+    out += d.toString();
+  });
+  const exited = new Promise<number | null>((resolve) => {
+    child.on("exit", (code) => {
+      resolve(code);
+    });
+  });
   return { child, output: () => out, exited };
 }
 
@@ -46,7 +73,9 @@ async function waitFor(condition: () => boolean, label: string): Promise<void> {
   const deadline = Date.now() + 30000;
   while (!condition()) {
     if (Date.now() > deadline) throw new Error("timed out waiting for " + label);
-    await new Promise<void>((resolve) => { setTimeout(resolve, 25); });
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 25);
+    });
   }
 }
 
@@ -60,7 +89,11 @@ const NEVER_ASSIGNED_PID = 999999999;
 async function deadPid(): Promise<number> {
   let pid = NEVER_ASSIGNED_PID;
   for (;;) {
-    try { process.kill(pid, 0); } catch { return pid; }
+    try {
+      process.kill(pid, 0);
+    } catch {
+      return pid;
+    }
     pid -= 1;
   }
 }

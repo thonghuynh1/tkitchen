@@ -15,7 +15,12 @@ describe("parseReport", () => {
   it("reads oxlint JSON into file, rule, line and message", () => {
     const report = JSON.stringify({
       diagnostics: [
-        { message: "Promises must be awaited", code: "typescript(no-floating-promises)", filename: "src\\a.ts", labels: [{ span: { line: 7 } }] },
+        {
+          message: "Promises must be awaited",
+          code: "typescript(no-floating-promises)",
+          filename: "src\\a.ts",
+          labels: [{ span: { line: 7 } }],
+        },
         { message: "Comments are not allowed.", code: "tkitchen(no-comments)", filename: "src/b.ts", labels: [] },
       ],
     });
@@ -35,7 +40,10 @@ describe("compare", () => {
     expect(verdict).toEqual({ failures: [], notes: [] });
   });
   it("an added violation fails, printing file:line rule message", () => {
-    const verdict = compare([diag("src/a.ts", FLOAT, 3), diag("src/a.ts", FLOAT, 9), diag("src/a.ts", FLOAT, 12)], TWO_FLOATS);
+    const verdict = compare(
+      [diag("src/a.ts", FLOAT, 3), diag("src/a.ts", FLOAT, 9), diag("src/a.ts", FLOAT, 12)],
+      TWO_FLOATS,
+    );
     expect(verdict.failures).toContain("src/a.ts:12 " + FLOAT + " bad " + FLOAT);
     expect(verdict.failures.some((line) => line.includes("3 > 2"))).toBe(true);
   });
@@ -51,7 +59,9 @@ describe("compare", () => {
 
 describe("countDiagnostics", () => {
   it("counts per file and rule", () => {
-    expect(countDiagnostics([diag("src/a.ts", FLOAT, 1), diag("src/a.ts", FLOAT, 2), diag("src/a.ts", MAGIC, 3)])).toEqual({ "src/a.ts": { [MAGIC]: 1, [FLOAT]: 2 } });
+    expect(
+      countDiagnostics([diag("src/a.ts", FLOAT, 1), diag("src/a.ts", FLOAT, 2), diag("src/a.ts", MAGIC, 3)]),
+    ).toEqual({ "src/a.ts": { [MAGIC]: 1, [FLOAT]: 2 } });
   });
 });
 

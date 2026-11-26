@@ -43,6 +43,8 @@ describe("pinned scenario: force-push repeat (fixed seed 6101)", () => {
         expect(state?.behindBy).toBe(world.remote.countBehindOids(state?.headOid ?? "", y));
         expect(state?.status).toBe("behind");
       }
-    } finally { world.dispose(); }
+    } finally {
+      world.dispose();
+    }
   }, 120000);
 });

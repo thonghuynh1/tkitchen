@@ -33,15 +33,16 @@ Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen ho
 
 `npm run verify` runs all of them, in this order.
 
-| Check | Command | Enforces |
-|---|---|---|
-| Lint ratchet | `npm run lint` | oxlint over the repo; no file may gain violations of any rule beyond `lint-baseline.json` |
-| Lint config guard | `npm run lint:guard` | no loosening of the checks without the user's `Lint-approved-by:` trailer |
-| Types | `npm run typecheck` | `tsgo --noEmit` for the Node program and, with `tsconfig.web.json`, for `src/` |
-| Web build | `npm run build:web` | `vite build` into `dist/web` |
-| Seams | `npm run seams` | dependency-cruiser, `.dependency-cruiser.cjs`: the entries, pure lib, pure index, cycle and import rules, one named rule each |
-| Environment and size | `npm run verify:structure` | `scripts/check-module-structure.mjs`: the clock rule and the 800-line budget |
-| Tests | `npm test`, `npm run test:sim` | unit, contract, CLI and quality suites; the Round simulation |
+| Check                | Command                        | Enforces                                                                                                                                                                                                       |
+| -------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Format               | `npm run format:check`         | `oxfmt --check .` with `.oxfmtrc.json` (width 120, 2 spaces, no import sorting; `.scratch`, the evidence folder, `package-lock.json` and `lint-baseline.json` are ignored). `npm run format` rewrites in place |
+| Lint ratchet         | `npm run lint`                 | oxlint over the repo; no file may gain violations of any rule beyond `lint-baseline.json`                                                                                                                      |
+| Lint config guard    | `npm run lint:guard`           | no loosening of the checks without the user's `Lint-approved-by:` trailer                                                                                                                                      |
+| Types                | `npm run typecheck`            | `tsgo --noEmit` for the Node program and, with `tsconfig.web.json`, for `src/`                                                                                                                                 |
+| Web build            | `npm run build:web`            | `vite build` into `dist/web`                                                                                                                                                                                   |
+| Seams                | `npm run seams`                | dependency-cruiser, `.dependency-cruiser.cjs`: the entries, pure lib, pure index, cycle and import rules, one named rule each                                                                                  |
+| Environment and size | `npm run verify:structure`     | `scripts/check-module-structure.mjs`: the clock rule and the 800-line budget                                                                                                                                   |
+| Tests                | `npm test`, `npm run test:sim` | unit, contract, CLI and quality suites; the Round simulation                                                                                                                                                   |
 
 Each rule has a failing fixture in `tests/quality/`: `seams.test.ts`, `structure.test.ts`, `lint.test.ts`, `ratchet.test.ts`, `guard.test.ts`.
 

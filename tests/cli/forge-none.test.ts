@@ -4,13 +4,25 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { git, cli } from "../helpers.ts";
 
-interface Notice { repo: string; branch: string; base: string | null; evidence: string | null; status: string; }
-interface Rounds { repo: string; lastCompleteAt: string | null; lastError: string | null; }
+interface Notice {
+  repo: string;
+  branch: string;
+  base: string | null;
+  evidence: string | null;
+  status: string;
+}
+interface Rounds {
+  repo: string;
+  lastCompleteAt: string | null;
+  lastError: string | null;
+}
 
 const saved = { fail: process.env["FAKE_GH_FAIL"], prs: process.env["FAKE_GH_PRS_FILE"] };
 afterEach(() => {
-  if (saved.fail === undefined) delete process.env["FAKE_GH_FAIL"]; else process.env["FAKE_GH_FAIL"] = saved.fail;
-  if (saved.prs === undefined) delete process.env["FAKE_GH_PRS_FILE"]; else process.env["FAKE_GH_PRS_FILE"] = saved.prs;
+  if (saved.fail === undefined) delete process.env["FAKE_GH_FAIL"];
+  else process.env["FAKE_GH_FAIL"] = saved.fail;
+  if (saved.prs === undefined) delete process.env["FAKE_GH_PRS_FILE"];
+  else process.env["FAKE_GH_PRS_FILE"] = saved.prs;
 });
 
 async function commitFile(cwd: string, name: string): Promise<void> {
@@ -20,10 +32,14 @@ async function commitFile(cwd: string, name: string): Promise<void> {
 }
 async function makeFixture(prefix: string, forge: string): Promise<{ root: string; home: string; work: string }> {
   const root = mkdtempSync(join(tmpdir(), prefix));
-  const home = join(root, "home"); const origin = join(root, "origin.git"); const work = join(root, "work");
+  const home = join(root, "home");
+  const origin = join(root, "origin.git");
+  const work = join(root, "work");
   await git(root, "init", "--bare", "-b", "main", origin);
   await git(root, "clone", origin, work);
-  await git(work, "config", "user.email", "t@t.t"); await git(work, "config", "user.name", "T"); await git(work, "config", "commit.gpgsign", "false");
+  await git(work, "config", "user.email", "t@t.t");
+  await git(work, "config", "user.name", "T");
+  await git(work, "config", "commit.gpgsign", "false");
   await git(work, "checkout", "-b", "main");
   await commitFile(work, "main.txt");
   await git(work, "push", "-u", "origin", "main");
@@ -62,7 +78,19 @@ describe("forge none", () => {
   async function prRound(forge: string): Promise<Notice | undefined> {
     const f = await makeFixture("tk-forge-pr-", forge);
     const prs = join(f.root, "prs.json");
-    writeFileSync(prs, JSON.stringify([{ number: 1, headRefName: "B", baseRefName: "main", url: "https://example.invalid/pr/1", author: { login: "t" }, isCrossRepository: false }]));
+    writeFileSync(
+      prs,
+      JSON.stringify([
+        {
+          number: 1,
+          headRefName: "B",
+          baseRefName: "main",
+          url: "https://example.invalid/pr/1",
+          author: { login: "t" },
+          isCrossRepository: false,
+        },
+      ]),
+    );
     process.env["FAKE_GH_PRS_FILE"] = prs;
     expect((await cli(f.home, "round", "--repo", "x")).code).toBe(0);
     await moveBases(f.work);

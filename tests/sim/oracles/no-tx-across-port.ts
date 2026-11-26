@@ -7,6 +7,12 @@ export const noTxAcrossPort: Oracle = {
   check(world: SimWorld): Violation[] {
     const calls = world.store.portCallsDuringTx;
     if (calls.length === 0) return [];
-    return [{ oracle: "no-tx-across-port", kind: "safety", detail: "port calls started while a transaction was open: " + calls.join(",") }];
+    return [
+      {
+        oracle: "no-tx-across-port",
+        kind: "safety",
+        detail: "port calls started while a transaction was open: " + calls.join(","),
+      },
+    ];
   },
 };

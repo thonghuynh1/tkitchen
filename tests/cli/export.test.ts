@@ -4,7 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { git, cli } from "../helpers.ts";
 
-interface Fixture { home: string; work: string; work2: string; }
+interface Fixture {
+  home: string;
+  work: string;
+  work2: string;
+}
 
 async function commitFile(cwd: string, name: string): Promise<void> {
   writeFileSync(join(cwd, name), name + "\n");
@@ -14,10 +18,14 @@ async function commitFile(cwd: string, name: string): Promise<void> {
 
 async function makeFixture(prefix: string): Promise<Fixture> {
   const root = mkdtempSync(join(tmpdir(), prefix));
-  const home = join(root, "home"); const origin = join(root, "origin.git"); const work = join(root, "work"); const work2 = join(root, "work2");
+  const home = join(root, "home");
+  const origin = join(root, "origin.git");
+  const work = join(root, "work");
+  const work2 = join(root, "work2");
   await git(root, "init", "--bare", origin);
   await git(root, "clone", origin, work);
-  await git(work, "config", "user.email", "t@t.t"); await git(work, "config", "user.name", "T");
+  await git(work, "config", "user.email", "t@t.t");
+  await git(work, "config", "user.name", "T");
   await git(work, "checkout", "-b", "main");
   await commitFile(work, "main.txt");
   await git(work, "push", "-u", "origin", "main");
@@ -28,7 +36,8 @@ async function makeFixture(prefix: string): Promise<Fixture> {
   await commitFile(work, "b.txt");
   await git(work, "push", "origin", "B");
   await git(root, "clone", origin, work2);
-  await git(work2, "config", "user.email", "t@t.t"); await git(work2, "config", "user.name", "T");
+  await git(work2, "config", "user.email", "t@t.t");
+  await git(work2, "config", "user.name", "T");
   mkdirSync(home, { recursive: true });
   writeFileSync(join(home, "config.json"), JSON.stringify({ repos: [{ name: "x", path: work, bases: { B: "C" } }] }));
   return { home, work, work2 };
@@ -46,20 +55,35 @@ async function round(f: Fixture): Promise<void> {
 
 async function makeThree(f: Fixture): Promise<void> {
   await round(f);
-  await pushToC(f, "c2.txt"); await round(f);
-  await pushToC(f, "c3.txt"); await round(f);
-  await pushToC(f, "c4.txt"); await round(f);
+  await pushToC(f, "c2.txt");
+  await round(f);
+  await pushToC(f, "c3.txt");
+  await round(f);
+  await pushToC(f, "c4.txt");
+  await round(f);
 }
 
 type Line = Record<string, unknown>;
 function parse(stdout: string): Line[] {
-  return stdout.trim().split("\n").filter((l) => l !== "").map((l) => JSON.parse(l) as Line);
+  return stdout
+    .trim()
+    .split("\n")
+    .filter((l) => l !== "")
+    .map((l) => JSON.parse(l) as Line);
 }
-function cursorOf(obj: unknown): string { return Buffer.from(JSON.stringify(obj), "utf8").toString("base64url"); }
+function cursorOf(obj: unknown): string {
+  return Buffer.from(JSON.stringify(obj), "utf8").toString("base64url");
+}
 function collectKeys(value: unknown, into: Set<string>): void {
   if (typeof value !== "object" || value === null) return;
-  if (Array.isArray(value)) { for (const v of value) collectKeys(v, into); return; }
-  for (const [k, v] of Object.entries(value)) { into.add(k); collectKeys(v, into); }
+  if (Array.isArray(value)) {
+    for (const v of value) collectKeys(v, into);
+    return;
+  }
+  for (const [k, v] of Object.entries(value)) {
+    into.add(k);
+    collectKeys(v, into);
+  }
 }
 
 describe("export", () => {
@@ -84,7 +108,8 @@ describe("export", () => {
     await makeThree(f);
     const first = parse((await cli(f.home, "export", "--json")).stdout);
     const cursor = String(first[4]?.["cursor"]);
-    await pushToC(f, "c5.txt"); await round(f);
+    await pushToC(f, "c5.txt");
+    await round(f);
     const r = await cli(f.home, "export", "--json", "--after", cursor);
     expect(r.code).toBe(0);
     const lines = parse(r.stdout);
@@ -116,7 +141,10 @@ describe("export", () => {
     expect(lines).toHaveLength(2);
     expect(lines[0]).toMatchObject({ type: "header", reset: false });
     expect(lines[1]).toMatchObject({ type: "end", events: 0 });
-    expect(JSON.parse(Buffer.from(String(lines[1]?.["cursor"]), "base64url").toString("utf8"))).toEqual({ s: 0, id: null });
+    expect(JSON.parse(Buffer.from(String(lines[1]?.["cursor"]), "base64url").toString("utf8"))).toEqual({
+      s: 0,
+      id: null,
+    });
   }, 60000);
 
   it("bad cursor", async () => {
@@ -137,6 +165,17 @@ describe("export", () => {
     expect(new Set(lines.map((l) => l["type"]))).toEqual(new Set(["header", "event", "end"]));
     const keys = new Set<string>();
     for (const line of lines) collectKeys(line, keys);
-    for (const forbidden of ["outcome", "status", "behind_by", "oid", "consumer", "disposition", "branch_state", "repo_heads", "round_status"]) expect(keys.has(forbidden)).toBe(false);
+    for (const forbidden of [
+      "outcome",
+      "status",
+      "behind_by",
+      "oid",
+      "consumer",
+      "disposition",
+      "branch_state",
+      "repo_heads",
+      "round_status",
+    ])
+      expect(keys.has(forbidden)).toBe(false);
   }, 60000);
 });

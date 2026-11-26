@@ -17,8 +17,12 @@ const FEATURE_REF = "refs/remotes/origin/feature";
 export function gitRepoContract(name: string, make: () => Promise<ScriptedGitRepo>): void {
   describe(name, () => {
     let repo: ScriptedGitRepo;
-    beforeEach(async () => { repo = await make(); });
-    afterEach(async () => { await repo.dispose(); });
+    beforeEach(async () => {
+      repo = await make();
+    });
+    afterEach(async () => {
+      await repo.dispose();
+    });
 
     it("lsRemoteHeads heads and defaultBranch", async () => {
       await repo.branchFrom("feature", "main");

@@ -7,7 +7,13 @@ export class SimConfig implements Config {
     this.repo = repo;
     this.config = { repos: [repo], roundMinutes: 15 };
   }
-  load(): Promise<KitchenConfig> { return Promise.resolve(this.config); }
-  setBase(branch: string, base: string): void { this.repo.bases[branch] = base; }
-  removeBase(branch: string): void { delete this.repo.bases[branch]; }
+  load(): Promise<KitchenConfig> {
+    return Promise.resolve(this.config);
+  }
+  setBase(branch: string, base: string): void {
+    this.repo.bases[branch] = base;
+  }
+  removeBase(branch: string): void {
+    delete this.repo.bases[branch];
+  }
 }

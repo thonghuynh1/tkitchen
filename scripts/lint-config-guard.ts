@@ -3,7 +3,15 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export type FindingKind = "lowered" | "removed" | "widened" | "ignored" | "unclassified" | "seams-changed" | "opt-out-added" | "checker-changed";
+export type FindingKind =
+  | "lowered"
+  | "removed"
+  | "widened"
+  | "ignored"
+  | "unclassified"
+  | "seams-changed"
+  | "opt-out-added"
+  | "checker-changed";
 
 export interface Finding {
   readonly file: string;
@@ -15,9 +23,23 @@ const OXLINT = ".oxlintrc.json";
 const SEAMS = ".dependency-cruiser.cjs";
 const OPT_OUTS = "docs/lint-opt-outs.md";
 const PACKAGE = "package.json";
-const CHECKERS = new Set(["scripts/lint-ratchet.ts", "scripts/lint-config-guard.ts", "scripts/check-module-structure.mjs"]);
+const CHECKERS = new Set([
+  "scripts/lint-ratchet.ts",
+  "scripts/lint-config-guard.ts",
+  "scripts/check-module-structure.mjs",
+]);
 const CHECKER_DIR = "scripts/oxlint/";
-const CHECK_SCRIPTS = ["lint", "lint:baseline", "lint:guard", "typecheck", "seams", "verify:structure", "test", "test:sim", "verify"];
+const CHECK_SCRIPTS = [
+  "lint",
+  "lint:baseline",
+  "lint:guard",
+  "typecheck",
+  "seams",
+  "verify:structure",
+  "test",
+  "test:sim",
+  "verify",
+];
 export const GUARDED = [OXLINT, SEAMS, OPT_OUTS, PACKAGE, ...CHECKERS, CHECKER_DIR.slice(0, -1)];
 const TOP_LEVEL_HANDLED = new Set(["plugins", "jsPlugins", "categories", "ignorePatterns", "rules", "overrides"]);
 const OVERRIDE_HANDLED = new Set(["files", "rules"]);
@@ -51,19 +73,38 @@ function options(setting: unknown): string {
 function compareRules(file: string, scope: string, before: Json, after: Json, out: Finding[]): void {
   for (const [rule, was] of Object.entries(before)) {
     if (!(rule in after)) {
-      if (level(was) > 0) out.push({ file, kind: "removed", detail: scope + " " + rule + " removed (was " + JSON.stringify(was) + ")" });
+      if (level(was) > 0)
+        out.push({ file, kind: "removed", detail: scope + " " + rule + " removed (was " + JSON.stringify(was) + ")" });
       continue;
     }
     const now = after[rule];
-    if (level(now) < level(was)) out.push({ file, kind: "lowered", detail: scope + " " + rule + ": " + JSON.stringify(was) + " -> " + JSON.stringify(now) });
-    else if (level(now) > 0 && options(now) !== options(was)) out.push({ file, kind: "unclassified", detail: scope + " " + rule + " options changed: " + JSON.stringify(was) + " -> " + JSON.stringify(now) });
+    if (level(now) < level(was))
+      out.push({
+        file,
+        kind: "lowered",
+        detail: scope + " " + rule + ": " + JSON.stringify(was) + " -> " + JSON.stringify(now),
+      });
+    else if (level(now) > 0 && options(now) !== options(was))
+      out.push({
+        file,
+        kind: "unclassified",
+        detail: scope + " " + rule + " options changed: " + JSON.stringify(was) + " -> " + JSON.stringify(now),
+      });
   }
   for (const [rule, now] of Object.entries(after)) {
-    if (!(rule in before) && level(now) === 0) out.push({ file, kind: "lowered", detail: scope + " " + rule + " turned off" });
+    if (!(rule in before) && level(now) === 0)
+      out.push({ file, kind: "lowered", detail: scope + " " + rule + " turned off" });
   }
 }
 
-function missingEntries(file: string, kind: FindingKind, label: string, from: unknown[], to: unknown[], out: Finding[]): void {
+function missingEntries(
+  file: string,
+  kind: FindingKind,
+  label: string,
+  from: unknown[],
+  to: unknown[],
+  out: Finding[],
+): void {
   const kept = new Set(to.map((entry) => JSON.stringify(entry)));
   for (const entry of from) {
     if (!kept.has(JSON.stringify(entry))) out.push({ file, kind, detail: label + " " + JSON.stringify(entry) });
@@ -81,7 +122,8 @@ function compareOverrides(file: string, before: unknown[], after: unknown[], top
     const match = now.get(key);
     const rules = recordAt(override, "rules");
     if (!match) {
-      if (Object.values(rules).some((s) => level(s) > 0)) out.push({ file, kind: "removed", detail: "override " + key + " removed while it turned rules on" });
+      if (Object.values(rules).some((s) => level(s) > 0))
+        out.push({ file, kind: "removed", detail: "override " + key + " removed while it turned rules on" });
       continue;
     }
     compareRules(file, "override " + key, rules, recordAt(match, "rules"), out);
@@ -91,15 +133,32 @@ function compareOverrides(file: string, before: unknown[], after: unknown[], top
     if (was.has(key)) continue;
     const rules = Object.entries(recordAt(override, "rules"));
     const onlyAdds = rules.every(([rule, setting]) => level(setting) > 0 && !(rule in topRules));
-    if (!onlyAdds) out.push({ file, kind: "widened", detail: "override " + key + " added or its files changed, and it turns a rule off or reconfigures one" });
+    if (!onlyAdds)
+      out.push({
+        file,
+        kind: "widened",
+        detail: "override " + key + " added or its files changed, and it turns a rule off or reconfigures one",
+      });
   }
 }
 
-function otherKeys(file: string, scope: string, before: Json, after: Json, handled: ReadonlySet<string>, out: Finding[]): void {
+function otherKeys(
+  file: string,
+  scope: string,
+  before: Json,
+  after: Json,
+  handled: ReadonlySet<string>,
+  out: Finding[],
+): void {
   const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
   for (const key of keys) {
     if (handled.has(key)) continue;
-    if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) out.push({ file, kind: "unclassified", detail: scope + " " + key + ": " + JSON.stringify(before[key]) + " -> " + JSON.stringify(after[key]) });
+    if (JSON.stringify(before[key]) !== JSON.stringify(after[key]))
+      out.push({
+        file,
+        kind: "unclassified",
+        detail: scope + " " + key + ": " + JSON.stringify(before[key]) + " -> " + JSON.stringify(after[key]),
+      });
   }
 }
 
@@ -122,19 +181,31 @@ function classifyOxlint(beforeText: string | undefined, afterText: string | unde
   compareRules(OXLINT, "category", recordAt(before, "categories"), recordAt(after, "categories"), out);
   missingEntries(OXLINT, "removed", "plugin removed:", listAt(before, "plugins"), listAt(after, "plugins"), out);
   missingEntries(OXLINT, "removed", "jsPlugin removed:", listAt(before, "jsPlugins"), listAt(after, "jsPlugins"), out);
-  missingEntries(OXLINT, "ignored", "ignore pattern added:", listAt(after, "ignorePatterns"), listAt(before, "ignorePatterns"), out);
+  missingEntries(
+    OXLINT,
+    "ignored",
+    "ignore pattern added:",
+    listAt(after, "ignorePatterns"),
+    listAt(before, "ignorePatterns"),
+    out,
+  );
   compareOverrides(OXLINT, listAt(before, "overrides"), listAt(after, "overrides"), recordAt(after, "rules"), out);
   otherKeys(OXLINT, "top-level", before, after, TOP_LEVEL_HANDLED, out);
   return out;
 }
 
 function entries(text: string): string[] {
-  return text.split("\n").filter((line) => /^\s*[-*] /.test(line)).map((line) => line.trim());
+  return text
+    .split("\n")
+    .filter((line) => /^\s*[-*] /.test(line))
+    .map((line) => line.trim());
 }
 
 function classifyOptOuts(before: string | undefined, after: string | undefined): Finding[] {
   const was = new Set(entries(before ?? ""));
-  return entries(after ?? "").filter((line) => !was.has(line)).map((line) => ({ file: OPT_OUTS, kind: "opt-out-added" as const, detail: line }));
+  return entries(after ?? "")
+    .filter((line) => !was.has(line))
+    .map((line) => ({ file: OPT_OUTS, kind: "opt-out-added" as const, detail: line }));
 }
 
 function classifyPackage(beforeText: string | undefined, afterText: string | undefined): Finding[] {
@@ -156,7 +227,9 @@ export function classify(file: string, beforeRaw: string | undefined, afterRaw: 
   if (file === OPT_OUTS) return classifyOptOuts(before, after);
   if (file === PACKAGE) return classifyPackage(before, after);
   if (CHECKERS.has(file) || file.startsWith(CHECKER_DIR)) {
-    return before === undefined ? [] : [{ file, kind: "checker-changed", detail: after === undefined ? "checker deleted" : "checker edited" }];
+    return before === undefined
+      ? []
+      : [{ file, kind: "checker-changed", detail: after === undefined ? "checker deleted" : "checker edited" }];
   }
   return [];
 }
@@ -171,7 +244,10 @@ function git(root: string, args: readonly string[]): string | undefined {
 }
 
 function lines(text: string | undefined): string[] {
-  return (text ?? "").split("\n").map((line) => line.trim()).filter(Boolean);
+  return (text ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function startingPoint(root: string): string | undefined {
@@ -191,8 +267,14 @@ function committed(root: string, base: string): Report[] {
   for (const commit of lines(git(root, ["rev-list", "--no-merges", "--reverse", base + "..HEAD", "--", ...GUARDED]))) {
     const approvedBy = git(root, ["log", "-1", "--format=%(trailers:key=Lint-approved-by,valueonly)", commit]) ?? "";
     const subject = git(root, ["log", "-1", "--format=%h %s", commit])?.trim() ?? commit;
-    for (const file of lines(git(root, ["diff-tree", "--no-commit-id", "--name-only", "-r", commit, "--", ...GUARDED]))) {
-      const findings = classify(file, git(root, ["show", commit + "^:" + file]), git(root, ["show", commit + ":" + file]));
+    for (const file of lines(
+      git(root, ["diff-tree", "--no-commit-id", "--name-only", "-r", commit, "--", ...GUARDED]),
+    )) {
+      const findings = classify(
+        file,
+        git(root, ["show", commit + "^:" + file]),
+        git(root, ["show", commit + ":" + file]),
+      );
       const hunk = git(root, ["show", "--format=", "-U1", commit, "--", file]) ?? "";
       for (const finding of unapproved(findings, approvedBy)) reports.push({ where: subject, finding, hunk });
     }
@@ -201,11 +283,18 @@ function committed(root: string, base: string): Report[] {
 }
 
 function uncommitted(root: string): Report[] {
-  const changed = [...lines(git(root, ["diff", "--name-only", "HEAD", "--", ...GUARDED])), ...lines(git(root, ["ls-files", "--others", "--exclude-standard", "--", ...GUARDED]))];
+  const changed = [
+    ...lines(git(root, ["diff", "--name-only", "HEAD", "--", ...GUARDED])),
+    ...lines(git(root, ["ls-files", "--others", "--exclude-standard", "--", ...GUARDED])),
+  ];
   const reports: Report[] = [];
   for (const file of changed) {
     const path = join(root, file);
-    const findings = classify(file, git(root, ["show", "HEAD:" + file]), existsSync(path) ? readFileSync(path, "utf8") : undefined);
+    const findings = classify(
+      file,
+      git(root, ["show", "HEAD:" + file]),
+      existsSync(path) ? readFileSync(path, "utf8") : undefined,
+    );
     const hunk = git(root, ["diff", "-U1", "HEAD", "--", file]) ?? "";
     for (const finding of findings) reports.push({ where: "working tree (uncommitted, so no trailer)", finding, hunk });
   }
@@ -224,9 +313,14 @@ function main(root: string): number {
     return 0;
   }
   for (const { where, finding, hunk } of reports) {
-    console.error(finding.file + " [" + finding.kind + "] " + finding.detail + "\n  in " + where + "\n" + hunk.trimEnd() + "\n");
+    console.error(
+      finding.file + " [" + finding.kind + "] " + finding.detail + "\n  in " + where + "\n" + hunk.trimEnd() + "\n",
+    );
   }
-  console.error(reports.length + " unapproved finding(s). Loosening needs the user's approval: a commit touching the file with the trailer 'Lint-approved-by: <name>'.");
+  console.error(
+    reports.length +
+      " unapproved finding(s). Loosening needs the user's approval: a commit touching the file with the trailer 'Lint-approved-by: <name>'.",
+  );
   return 1;
 }
 

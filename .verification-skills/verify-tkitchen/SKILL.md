@@ -30,21 +30,21 @@ The world is ready when `doctor` exits 0. There is no server for `round`, `notic
 
 Helper verbs (all take the run dir `$R` first):
 
-| Verb | Effect |
-|---|---|
+| Verb                                  | Effect                                                                                                                                                                                  |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `branch $R <dev\|mate> <name> <from>` | `checkout -b name origin/from`, one commit, push. From `dev`, this is a **named creation** in the round's clone (reflog evidence). From `mate`, the round's clone has no reflog for it. |
-| `branch-oid $R dev <name> <from>` | `git branch name <oid of from>`: a **commit creation** (reflog-tip evidence) |
-| `commit $R <clone> <branch> [n]` | push n commits on top of `origin/<branch>` |
-| `merge $R <clone> <into> <from>` | `merge --no-ff` and push |
-| `bases $R '<json>'` | set config `bases` for repo x, e.g. `'{"B":"C"}'` |
-| `prs $R '<json>'` | open PRs the fake gh returns: `'[["head","base"],["h2","base","fork"]]'` |
-| `set-url $R <url\|ORIGIN>` | break or restore dev's origin URL |
-| `kt $R [ENV=V ...] -- <args>` | run the real `tkitchen <args>` in the world. Example: `kt $R FAKE_GH_FAIL=1 -- round` makes gh fail |
-| `serve-start $R [roundMinutes]` | start `tkitchen serve` detached; prints its pid |
-| `board-start $R` | start `tkitchen board --port 0` detached, output in `board.log`; prints its pid |
-| `sql $R '<select>'` | read-only query on `home/kitchen.db` |
-| `refs $R` | all refs of the bare origin |
-| `cleanup $R` | kill only the serve and board processes this run started |
+| `branch-oid $R dev <name> <from>`     | `git branch name <oid of from>`: a **commit creation** (reflog-tip evidence)                                                                                                            |
+| `commit $R <clone> <branch> [n]`      | push n commits on top of `origin/<branch>`                                                                                                                                              |
+| `merge $R <clone> <into> <from>`      | `merge --no-ff` and push                                                                                                                                                                |
+| `bases $R '<json>'`                   | set config `bases` for repo x, e.g. `'{"B":"C"}'`                                                                                                                                       |
+| `prs $R '<json>'`                     | open PRs the fake gh returns: `'[["head","base"],["h2","base","fork"]]'`                                                                                                                |
+| `set-url $R <url\|ORIGIN>`            | break or restore dev's origin URL                                                                                                                                                       |
+| `kt $R [ENV=V ...] -- <args>`         | run the real `tkitchen <args>` in the world. Example: `kt $R FAKE_GH_FAIL=1 -- round` makes gh fail                                                                                     |
+| `serve-start $R [roundMinutes]`       | start `tkitchen serve` detached; prints its pid                                                                                                                                         |
+| `board-start $R`                      | start `tkitchen board --port 0` detached, output in `board.log`; prints its pid                                                                                                         |
+| `sql $R '<select>'`                   | read-only query on `home/kitchen.db`                                                                                                                                                    |
+| `refs $R`                             | all refs of the bare origin                                                                                                                                                             |
+| `cleanup $R`                          | kill only the serve and board processes this run started                                                                                                                                |
 
 Ready-made journeys, one per feature, run every check and print `PASS`/`FAIL` lines plus a summary:
 

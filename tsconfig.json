@@ -10,18 +10,10 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": [
-      "node",
-      "vitest/globals"
-    ],
+    "types": ["node", "vitest/globals"],
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "modules/**/*.ts",
-    "cli/**/*.ts",
-    "index.ts",
-    "tests/**/*.ts"
-  ]
+  "include": ["modules/**/*.ts", "cli/**/*.ts", "index.ts", "tests/**/*.ts"]
 }

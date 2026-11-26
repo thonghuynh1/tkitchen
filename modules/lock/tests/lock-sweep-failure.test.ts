@@ -5,7 +5,12 @@ import { join } from "node:path";
 
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
-  return { ...actual, readdir: async () => { throw Object.assign(new Error("EACCES: permission denied, scandir"), { code: "EACCES" }); } };
+  return {
+    ...actual,
+    readdir: async () => {
+      throw Object.assign(new Error("EACCES: permission denied, scandir"), { code: "EACCES" });
+    },
+  };
 });
 
 const { FileLock } = await import("../adapters.ts");

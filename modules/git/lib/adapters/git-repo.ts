@@ -2,45 +2,84 @@ import { execFile } from "node:child_process";
 import { PortError } from "../../../platform/index.ts";
 import type { GitRepo } from "../contract.ts";
 
-export interface GitRunResult { stdout: string; stderr: string; code: number; }
-export interface GitRunnerOptions { timeoutMs?: number; }
+export interface GitRunResult {
+  stdout: string;
+  stderr: string;
+  code: number;
+}
+export interface GitRunnerOptions {
+  timeoutMs?: number;
+}
 export type GitRunner = (args: string[], cwd: string, options?: GitRunnerOptions) => Promise<GitRunResult>;
 
 export const GIT_TIMEOUT_MS = 20_000;
-export interface GitProcessGuard { onCall: (args: string[]) => void; }
+export interface GitProcessGuard {
+  onCall: (args: string[]) => void;
+}
 let gitProcessGuard: GitProcessGuard | null = null;
-export function setGitProcessGuard(guard: GitProcessGuard | null): void { gitProcessGuard = guard; }
+export function setGitProcessGuard(guard: GitProcessGuard | null): void {
+  gitProcessGuard = guard;
+}
 export function createGitRunner(options: GitRunnerOptions = {}): GitRunner {
   const defaultTimeoutMs = options.timeoutMs ?? GIT_TIMEOUT_MS;
   return (args, cwd, callOptions) => {
     if (gitProcessGuard !== null) {
       gitProcessGuard.onCall(args);
-      return Promise.reject(new PortError("failed", "real git blocked inside a deterministic sim: git " + args.join(" ")));
+      return Promise.reject(
+        new PortError("failed", "real git blocked inside a deterministic sim: git " + args.join(" ")),
+      );
     }
     const timeoutMs = callOptions?.timeoutMs ?? defaultTimeoutMs;
     return new Promise((resolve, reject) => {
-      execFile("git", args, { cwd, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }, timeout: timeoutMs, killSignal: "SIGKILL" }, (err, stdout, stderr) => {
-        if (err !== null && typeof err === "object" && "killed" in err && err.killed === true) { reject(new PortError("timeout", "git " + args[0] + " timeout after " + timeoutMs + "ms")); return; }
-        const code = err === null ? 0 : (typeof err === "object" && "code" in err && typeof err.code === "number" ? err.code : 1);
-        resolve({ stdout: stdout.toString(), stderr: stderr.toString(), code });
-      });
+      execFile(
+        "git",
+        args,
+        { cwd, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }, timeout: timeoutMs, killSignal: "SIGKILL" },
+        (err, stdout, stderr) => {
+          if (err !== null && typeof err === "object" && "killed" in err && err.killed === true) {
+            reject(new PortError("timeout", "git " + args[0] + " timeout after " + timeoutMs + "ms"));
+            return;
+          }
+          const code =
+            err === null ? 0 : typeof err === "object" && "code" in err && typeof err.code === "number" ? err.code : 1;
+          resolve({ stdout: stdout.toString(), stderr: stderr.toString(), code });
+        },
+      );
     });
   };
 }
 export const defaultGitRunner: GitRunner = createGitRunner();
 
 export class GitRepoImpl implements GitRepo {
-  private repoPath: string; private runner: GitRunner; private readonly timeoutMs: number;
-  constructor(repoPath: string, runner: GitRunner | GitRunnerOptions = defaultGitRunner, options: GitRunnerOptions = {}) {
+  private repoPath: string;
+  private runner: GitRunner;
+  private readonly timeoutMs: number;
+  constructor(
+    repoPath: string,
+    runner: GitRunner | GitRunnerOptions = defaultGitRunner,
+    options: GitRunnerOptions = {},
+  ) {
     this.repoPath = repoPath;
-    if (typeof runner === "function") { this.runner = runner; this.timeoutMs = options.timeoutMs ?? GIT_TIMEOUT_MS; }
-    else { const merged = { ...runner, ...options }; this.runner = createGitRunner(merged); this.timeoutMs = merged.timeoutMs ?? GIT_TIMEOUT_MS; }
+    if (typeof runner === "function") {
+      this.runner = runner;
+      this.timeoutMs = options.timeoutMs ?? GIT_TIMEOUT_MS;
+    } else {
+      const merged = { ...runner, ...options };
+      this.runner = createGitRunner(merged);
+      this.timeoutMs = merged.timeoutMs ?? GIT_TIMEOUT_MS;
+    }
   }
   private async run(args: string[]): Promise<GitRunResult> {
-    try { return await this.runner(args, this.repoPath, { timeoutMs: this.timeoutMs }); }
-    catch (e) { if (e instanceof PortError) throw e; throw new PortError("failed", e instanceof Error ? e.message : String(e)); }
+    try {
+      return await this.runner(args, this.repoPath, { timeoutMs: this.timeoutMs });
+    } catch (e) {
+      if (e instanceof PortError) throw e;
+      throw new PortError("failed", e instanceof Error ? e.message : String(e));
+    }
   }
-  private ref(branch: string, remote: string): string { return "refs/remotes/" + remote + "/" + branch; }
+  private ref(branch: string, remote: string): string {
+    return "refs/remotes/" + remote + "/" + branch;
+  }
   async lsRemoteHeads(remote: string): Promise<{ heads: Map<string, string>; defaultBranch: string | null }> {
     const r = await this.run(["ls-remote", "--symref", remote, "HEAD", "refs/heads/*"]);
     if (r.code !== 0) throw new PortError("failed", "git ls-remote failed: " + r.stderr.trim());
@@ -79,7 +118,12 @@ export class GitRepoImpl implements GitRepo {
     const prefix = "refs/remotes/" + remote + "/";
     const r = await this.run(["for-each-ref", "--format=%(refname)", "--contains", this.ref(branch, remote), prefix]);
     if (r.code !== 0) throw new PortError("failed", "git for-each-ref failed: " + r.stderr.trim());
-    return r.stdout.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.startsWith(prefix)).map((l) => l.slice(prefix.length)).filter((b) => b !== "HEAD");
+    return r.stdout
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith(prefix))
+      .map((l) => l.slice(prefix.length))
+      .filter((b) => b !== "HEAD");
   }
   async countBehind(child: string, base: string): Promise<number> {
     const r = await this.run(["rev-list", "--count", child + ".." + base]);
@@ -91,7 +135,8 @@ export class GitRepoImpl implements GitRepo {
   private reflogStdout(r: GitRunResult): string | null {
     if (r.code === 0) return r.stdout;
     const stderr = r.stderr.trim();
-    const absent = /unknown revision or path not in the working tree|ambiguous argument|no reflog for|does not exist/.test(stderr);
+    const absent =
+      /unknown revision or path not in the working tree|ambiguous argument|no reflog for|does not exist/.test(stderr);
     if (absent) return null;
     throw new PortError("failed", "git reflog failed: " + (stderr === "" ? "exit " + r.code : stderr));
   }
@@ -132,5 +177,7 @@ export class GitRepoImpl implements GitRepo {
     }
     return null;
   }
-  remoteRef(remote: string, branch: string): string { return this.ref(branch, remote); }
+  remoteRef(remote: string, branch: string): string {
+    return this.ref(branch, remote);
+  }
 }

@@ -23,6 +23,13 @@ process.stdin.on("data", (chunk) => {
     void acquireAndReport();
   }
   if (buffer.includes("release")) {
-    lock.release().then(() => { process.exit(0); }, () => { process.exit(1); });
+    lock.release().then(
+      () => {
+        process.exit(0);
+      },
+      () => {
+        process.exit(1);
+      },
+    );
   }
 });

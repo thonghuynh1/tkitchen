@@ -20,7 +20,14 @@ describe("env rule", () => {
     expect(inspect({ [LIB]: "export const t = Math.random();\n" })).toHaveLength(1);
   });
   it("checks every env pattern outside adapters", () => {
-    const samples = ["export const a = Date.now();", "export const b = new Date();", "export const c = setTimeout(() => undefined, 1);", "export const d = setInterval(() => undefined, 1);", "export const e = Math.random();", "export const f = randomUUID();"];
+    const samples = [
+      "export const a = Date.now();",
+      "export const b = new Date();",
+      "export const c = setTimeout(() => undefined, 1);",
+      "export const d = setInterval(() => undefined, 1);",
+      "export const e = Math.random();",
+      "export const f = randomUUID();",
+    ];
     for (const sample of samples) {
       const errors = inspect({ [LIB]: sample + "\n" });
       expect(errors).toHaveLength(1);
@@ -40,7 +47,10 @@ describe("structure CLI", () => {
     try {
       mkdirSync(join(root, "scripts"), { recursive: true });
       mkdirSync(join(root, "modules", "rounds", "lib"), { recursive: true });
-      copyFileSync(join(process.cwd(), "scripts", "check-module-structure.mjs"), join(root, "scripts", "check-module-structure.mjs"));
+      copyFileSync(
+        join(process.cwd(), "scripts", "check-module-structure.mjs"),
+        join(root, "scripts", "check-module-structure.mjs"),
+      );
       writeFileSync(join(root, "modules", "rounds", "lib", "x.ts"), "export const t = Date.now();\n");
       let status = 0;
       let output = "";
@@ -53,7 +63,9 @@ describe("structure CLI", () => {
       }
       expect(status).toBe(1);
       expect(output).toContain("use the Clock/Scheduler/Random/Ids port");
-    } finally { rmSync(root, { recursive: true, force: true }); }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 describe("module budget", () => {

@@ -5,7 +5,10 @@
  */
 import type { Trigger } from "../../triggers/index.ts";
 
-export interface ExportRow { seq: number; trigger: Trigger; }
+export interface ExportRow {
+  seq: number;
+  trigger: Trigger;
+}
 
 export interface ExportReadPort {
   eventIdAtSeq(seq: number): string | undefined;
@@ -14,14 +17,35 @@ export interface ExportReadPort {
 
 export type ExportLine =
   | { type: "header"; schema: "tkitchen.export/1"; machine: string; reset: boolean }
-  | { type: "event"; seq: number; id: string; source: string; threads: string[]; actor: string; human: boolean; addressed: string | null; at: string; text: string | null; channel: string | null; url: string | null; machine: string; meta: Trigger["meta"] }
+  | {
+      type: "event";
+      seq: number;
+      id: string;
+      source: string;
+      threads: string[];
+      actor: string;
+      human: boolean;
+      addressed: string | null;
+      at: string;
+      text: string | null;
+      channel: string | null;
+      url: string | null;
+      machine: string;
+      meta: Trigger["meta"];
+    }
   | { type: "end"; cursor: string; events: number };
 
 export class InvalidCursorError extends Error {
-  constructor() { super("invalid cursor"); this.name = "InvalidCursorError"; }
+  constructor() {
+    super("invalid cursor");
+    this.name = "InvalidCursorError";
+  }
 }
 
-interface Cursor { s: number; id: string | null; }
+interface Cursor {
+  s: number;
+  id: string | null;
+}
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+={0,2}$/;
 const CURSOR_KEY_COUNT = 2;
@@ -53,7 +77,10 @@ function encodeCursor(cursor: Cursor): string {
   return Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
 }
 
-export function exportLines(port: ExportReadPort, input: { machine: string; after?: string | undefined }): ExportLine[] {
+export function exportLines(
+  port: ExportReadPort,
+  input: { machine: string; after?: string | undefined },
+): ExportLine[] {
   let reset = false;
   let afterSeq = 0;
   let prior: Cursor = { s: 0, id: null };
@@ -73,7 +100,22 @@ export function exportLines(port: ExportReadPort, input: { machine: string; afte
   let last: Cursor = reset ? { s: 0, id: null } : prior;
   for (const row of rows) {
     const t = row.trigger;
-    lines.push({ type: "event", seq: row.seq, id: t.id, source: t.source, threads: [...t.threads], actor: t.actor, human: t.human, addressed: t.addressed, at: t.at, text: t.text, channel: t.channel, url: t.url, machine: t.machine, meta: { ...t.meta } });
+    lines.push({
+      type: "event",
+      seq: row.seq,
+      id: t.id,
+      source: t.source,
+      threads: [...t.threads],
+      actor: t.actor,
+      human: t.human,
+      addressed: t.addressed,
+      at: t.at,
+      text: t.text,
+      channel: t.channel,
+      url: t.url,
+      machine: t.machine,
+      meta: { ...t.meta },
+    });
     last = { s: row.seq, id: t.id };
   }
   lines.push({ type: "end", cursor: encodeCursor(last), events: rows.length });

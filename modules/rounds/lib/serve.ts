@@ -24,9 +24,7 @@ export interface ServeDeps {
   options?: RoundOptions | undefined;
 }
 
-export type ServeResult =
-  | { kind: "held"; pid: number | null }
-  | { kind: "stopped" };
+export type ServeResult = { kind: "held"; pid: number | null } | { kind: "stopped" };
 
 export async function serve(deps: ServeDeps): Promise<ServeResult> {
   const acquired = await deps.lock.acquire();
@@ -48,7 +46,9 @@ export async function serve(deps: ServeDeps): Promise<ServeResult> {
           await runRoundForRepo(roundDeps, repo);
         } catch (e) {
           if (e instanceof PortError) {
-            try { deps.store.recordRoundError(repo.name, e.message); } catch { }
+            try {
+              deps.store.recordRoundError(repo.name, e.message);
+            } catch {}
           } else throw e;
         }
         if (deps.shouldStop?.() === true) break;

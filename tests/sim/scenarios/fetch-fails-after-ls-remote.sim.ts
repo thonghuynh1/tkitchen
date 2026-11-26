@@ -37,7 +37,9 @@ describe("pinned scenario: fetch fails after ls-remote changed (fixed seed 6102)
         expect(state?.behindBy).toBe(1);
       }
       expect(groundTruth.check(world)).toEqual([]);
-    } finally { world.dispose(); }
+    } finally {
+      world.dispose();
+    }
   }, 120000);
 
   it("deleted branch closes its notice on the next complete Round", async () => {
@@ -57,7 +59,9 @@ describe("pinned scenario: fetch fails after ls-remote changed (fixed seed 6102)
       expect((await pumpRound(world)).ok).toBe(true);
       expect(world.store.listBranchStates().some((s) => s.branch === "B")).toBe(false);
       expect(groundTruth.check(world)).toEqual([]);
-    } finally { world.dispose(); }
+    } finally {
+      world.dispose();
+    }
   }, 120000);
 
   it("git timeout on any method makes the Round incomplete", async () => {
@@ -76,6 +80,8 @@ describe("pinned scenario: fetch fails after ls-remote changed (fixed seed 6102)
       expect(world.store.listRoundStatus()[0]?.lastError).toContain("timeout");
       expect((await pumpRound(world)).ok).toBe(true);
       expect(groundTruth.check(world)).toEqual([]);
-    } finally { world.dispose(); }
+    } finally {
+      world.dispose();
+    }
   }, 120000);
 });

@@ -4,7 +4,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { git, cli } from "../helpers.ts";
 
-interface Fixture { root: string; home: string; origin: string; work: string; work2: string; }
+interface Fixture {
+  root: string;
+  home: string;
+  origin: string;
+  work: string;
+  work2: string;
+}
 
 async function commitFile(cwd: string, name: string): Promise<void> {
   writeFileSync(join(cwd, name), name + "\n");
@@ -14,10 +20,15 @@ async function commitFile(cwd: string, name: string): Promise<void> {
 
 async function makeFixture(prefix: string): Promise<Fixture> {
   const root = mkdtempSync(join(tmpdir(), prefix));
-  const home = join(root, "home"); const origin = join(root, "origin.git"); const work = join(root, "work"); const work2 = join(root, "work2");
+  const home = join(root, "home");
+  const origin = join(root, "origin.git");
+  const work = join(root, "work");
+  const work2 = join(root, "work2");
   await git(root, "init", "--bare", "-b", "main", origin);
   await git(root, "clone", origin, work);
-  await git(work, "config", "user.email", "t@t.t"); await git(work, "config", "user.name", "T"); await git(work, "config", "commit.gpgsign", "false");
+  await git(work, "config", "user.email", "t@t.t");
+  await git(work, "config", "user.name", "T");
+  await git(work, "config", "commit.gpgsign", "false");
   await git(work, "checkout", "-b", "main");
   await commitFile(work, "main.txt");
   await git(work, "push", "-u", "origin", "main");
@@ -33,7 +44,9 @@ async function makeFixture(prefix: string): Promise<Fixture> {
   await commitFile(work, "e1.txt");
   await git(work, "push", "-u", "origin", "E");
   await git(root, "clone", origin, work2);
-  await git(work2, "config", "user.email", "t@t.t"); await git(work2, "config", "user.name", "T"); await git(work2, "config", "commit.gpgsign", "false");
+  await git(work2, "config", "user.email", "t@t.t");
+  await git(work2, "config", "user.name", "T");
+  await git(work2, "config", "commit.gpgsign", "false");
   mkdirSync(home, { recursive: true });
   writeFileSync(join(home, "config.json"), JSON.stringify({ repos: [{ name: "x", path: work, bases: {} }] }));
   return { root, home, origin, work, work2 };
@@ -45,7 +58,15 @@ async function pushToC(f: Fixture): Promise<void> {
   await git(f.work2, "push", "origin", "C");
 }
 
-interface Notice { repo: string; branch: string; base: string | null; evidence: string | null; status: string; behindBy: number | null; lastEventId: string | null; }
+interface Notice {
+  repo: string;
+  branch: string;
+  base: string | null;
+  evidence: string | null;
+  status: string;
+  behindBy: number | null;
+  lastEventId: string | null;
+}
 
 describe("reflog bases", () => {
   it("reflog and reflog-tip branches are behind after base moves", async () => {
@@ -89,7 +110,7 @@ describe("reflog bases", () => {
     expect(r.code).toBe(0);
     const line = r.stdout.split("\n").find((l) => l.includes(" G "));
     expect(line).toContain("needs_base");
-    expect(line).toContain("add \"bases\": { \"G\": \"<base>\" } to " + join(f.home, "config.json"));
+    expect(line).toContain('add "bases": { "G": "<base>" } to ' + join(f.home, "config.json"));
   }, 60000);
 
   it("history lists triggers with dispositions", async () => {
@@ -99,7 +120,12 @@ describe("reflog bases", () => {
     expect((await cli(f.home, "round", "--repo", "x")).code).toBe(0);
     const r = await cli(f.home, "notices", "--json", "--history");
     expect(r.code).toBe(0);
-    const out = JSON.parse(r.stdout) as { history: { event: { id: string; threads: string[] }; dispositions: { thread: string; outcome: string; meta: { behindBy: number } }[] }[] };
+    const out = JSON.parse(r.stdout) as {
+      history: {
+        event: { id: string; threads: string[] };
+        dispositions: { thread: string; outcome: string; meta: { behindBy: number } }[];
+      }[];
+    };
     expect(out.history).toHaveLength(1);
     const entry = out.history[0];
     expect(entry?.dispositions.map((d) => d.thread).sort()).toEqual(["git:x:B", "git:x:E"]);

@@ -2,9 +2,10 @@ export type BaseEvidence = {
   branch: string;
   explicit: string | null;
   prTargets: readonly string[];
-  creation: { kind: "named"; name: string; startIsAncestor: boolean }
-          | { kind: "commit"; matches: readonly string[]; startIsAncestorOfMatch: boolean }
-          | null;
+  creation:
+    | { kind: "named"; name: string; startIsAncestor: boolean }
+    | { kind: "commit"; matches: readonly string[]; startIsAncestorOfMatch: boolean }
+    | null;
   pushed: ReadonlySet<string>;
 };
 export type BaseResult =

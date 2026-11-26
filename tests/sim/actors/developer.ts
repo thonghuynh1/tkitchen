@@ -15,8 +15,20 @@ export class Developer {
   private readonly config: SimConfig;
   private readonly trace: Trace;
   private readonly clock: VirtualClock;
-  constructor(deps: { rng: SeededRandom; remote: SimRemote; forge: SimForge; config: SimConfig; trace: Trace; clock: VirtualClock }) {
-    this.rng = deps.rng; this.remote = deps.remote; this.forge = deps.forge; this.config = deps.config; this.trace = deps.trace; this.clock = deps.clock;
+  constructor(deps: {
+    rng: SeededRandom;
+    remote: SimRemote;
+    forge: SimForge;
+    config: SimConfig;
+    trace: Trace;
+    clock: VirtualClock;
+  }) {
+    this.rng = deps.rng;
+    this.remote = deps.remote;
+    this.forge = deps.forge;
+    this.config = deps.config;
+    this.trace = deps.trace;
+    this.clock = deps.clock;
   }
   createInitialTree(count: number): void {
     for (let i = 0; i < count; i++) {
@@ -39,20 +51,50 @@ export class Developer {
       const pr = this.forge.openPullRequest({ head: name, base });
       this.trace.record(this.clock.nowMs(), "actor.open-pr", name + " -> " + base + " #" + pr.number);
     }
-    this.trace.record(this.clock.nowMs(), "actor.branch", name + " from " + base + " at " + oid + (withOverride ? " override" : otherMachine ? " other-machine" : " reflog"));
+    this.trace.record(
+      this.clock.nowMs(),
+      "actor.branch",
+      name +
+        " from " +
+        base +
+        " at " +
+        oid +
+        (withOverride ? " override" : otherMachine ? " other-machine" : " reflog"),
+    );
     return name;
   }
   act(allowDelete = true): void {
     const branches = this.remote.branchNames();
     const children = branches.filter((b) => b !== this.remote.defaultBranch && this.baseOf(b) !== undefined);
     const roll = this.rng.next();
-    if (roll < 0.3 || children.length === 0) { this.commitPush(this.rng.pick(branches)); return; }
-    if (roll < 0.38) { this.forcePushToOlder(this.rng.pick(branches)); return; }
-    if (roll < 0.52) { this.mergeBaseIntoChild(this.rng.pick(children)); return; }
-    if (roll < 0.62) { this.mergeChildIntoBase(this.rng.pick(children)); return; }
-    if (roll < 0.72) { this.prAction(branches); return; }
-    if (roll < 0.87 && branches.length < MAX_BRANCHES) { this.branchFrom(this.rng.pick(branches)); return; }
-    if (branches.length > 4 && allowDelete) { this.deleteBranch(this.rng.pick(children.length > 0 ? children : branches)); return; }
+    if (roll < 0.3 || children.length === 0) {
+      this.commitPush(this.rng.pick(branches));
+      return;
+    }
+    if (roll < 0.38) {
+      this.forcePushToOlder(this.rng.pick(branches));
+      return;
+    }
+    if (roll < 0.52) {
+      this.mergeBaseIntoChild(this.rng.pick(children));
+      return;
+    }
+    if (roll < 0.62) {
+      this.mergeChildIntoBase(this.rng.pick(children));
+      return;
+    }
+    if (roll < 0.72) {
+      this.prAction(branches);
+      return;
+    }
+    if (roll < 0.87 && branches.length < MAX_BRANCHES) {
+      this.branchFrom(this.rng.pick(branches));
+      return;
+    }
+    if (branches.length > 4 && allowDelete) {
+      this.deleteBranch(this.rng.pick(children.length > 0 ? children : branches));
+      return;
+    }
     this.commitPush(this.rng.pick(branches));
   }
   private prAction(branches: string[]): void {
@@ -78,7 +120,11 @@ export class Developer {
       this.trace.record(this.clock.nowMs(), "actor.retarget-pr", existing.head + " -> " + base);
       return;
     }
-    if (roll < 0.75) { this.forge.closePullRequests(existing.head); this.trace.record(this.clock.nowMs(), "actor.close-pr", existing.head); return; }
+    if (roll < 0.75) {
+      this.forge.closePullRequests(existing.head);
+      this.trace.record(this.clock.nowMs(), "actor.close-pr", existing.head);
+      return;
+    }
     if (roll < 0.9) {
       const bases = branches.filter((b) => b !== existing.head && b !== existing.base);
       if (bases.length === 0) return;
@@ -95,9 +141,15 @@ export class Developer {
   }
   forcePushToOlder(branch: string): void {
     const history = this.remote.firstParentHistory(branch);
-    if (history.length < 2) { this.commitPush(branch); return; }
+    if (history.length < 2) {
+      this.commitPush(branch);
+      return;
+    }
     const older = history[history.length - 1] ?? history[1];
-    if (older === undefined || older === this.remote.head(branch)) { this.commitPush(branch); return; }
+    if (older === undefined || older === this.remote.head(branch)) {
+      this.commitPush(branch);
+      return;
+    }
     this.remote.forcePush(branch, older);
     this.trace.record(this.clock.nowMs(), "actor.force-push", branch + " to older " + older);
   }
@@ -118,22 +170,37 @@ export class Developer {
   }
   private mergeBaseIntoChild(child: string): void {
     const base = this.baseOf(child);
-    if (base === undefined || this.remote.head(base) === undefined) { this.commitPush(child); return; }
+    if (base === undefined || this.remote.head(base) === undefined) {
+      this.commitPush(child);
+      return;
+    }
     const baseHead = this.remote.head(base);
-    if (baseHead === undefined) { this.commitPush(child); return; }
+    if (baseHead === undefined) {
+      this.commitPush(child);
+      return;
+    }
     const oid = this.remote.commitOn(child, [baseHead]);
     this.trace.record(this.clock.nowMs(), "actor.merge-base-into-child", base + " into " + child + " at " + oid);
   }
   private mergeChildIntoBase(child: string): void {
     const base = this.baseOf(child);
-    if (base === undefined || this.remote.head(child) === undefined) { this.commitPush(child); return; }
+    if (base === undefined || this.remote.head(child) === undefined) {
+      this.commitPush(child);
+      return;
+    }
     const childHead = this.remote.head(child);
-    if (childHead === undefined) { this.commitPush(child); return; }
+    if (childHead === undefined) {
+      this.commitPush(child);
+      return;
+    }
     const oid = this.remote.commitOn(base, [childHead]);
     this.trace.record(this.clock.nowMs(), "actor.merge-child-into-base", child + " into " + base + " at " + oid);
   }
   private deleteBranch(branch: string): void {
-    if (branch === this.remote.defaultBranch) { this.commitPush(branch); return; }
+    if (branch === this.remote.defaultBranch) {
+      this.commitPush(branch);
+      return;
+    }
     this.remote.deleteBranch(branch);
     this.trace.record(this.clock.nowMs(), "actor.delete", branch);
   }

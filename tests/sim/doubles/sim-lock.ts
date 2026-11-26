@@ -5,13 +5,19 @@ export class SimLockSystem {
   private readonly alive = new Set<number>();
   private readonly activeWriters = new Set<number>();
   maxActiveWriters = 0;
-  register(pid: number): void { this.alive.add(pid); }
+  register(pid: number): void {
+    this.alive.add(pid);
+  }
   kill(pid: number): void {
     this.alive.delete(pid);
     this.activeWriters.delete(pid);
   }
-  isAlive(pid: number): boolean { return this.alive.has(pid); }
-  holderPid(): number | null { return this.holder; }
+  isAlive(pid: number): boolean {
+    return this.alive.has(pid);
+  }
+  holderPid(): number | null {
+    return this.holder;
+  }
   tryAcquire(pid: number): boolean {
     if (this.holder !== null && this.holder !== pid && this.alive.has(this.holder)) return false;
     this.holder = pid;
@@ -44,5 +50,7 @@ export class SimLock implements Lock {
   holderPid(): Promise<number | null> {
     return Promise.resolve(this.system.holderPid());
   }
-  crash(): void { this.system.kill(this.pid); }
+  crash(): void {
+    this.system.kill(this.pid);
+  }
 }

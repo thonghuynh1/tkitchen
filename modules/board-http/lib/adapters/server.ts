@@ -69,9 +69,12 @@ export function startBoardServer(options: BoardServerOptions): Promise<BoardServ
       }
       resolveStart({
         url: "http://" + options.host + ":" + String(address.port),
-        close: () => new Promise<void>((resolveClose) => {
-          server.close(() => { resolveClose(); });
-        }),
+        close: () =>
+          new Promise<void>((resolveClose) => {
+            server.close(() => {
+              resolveClose();
+            });
+          }),
       });
     });
   });

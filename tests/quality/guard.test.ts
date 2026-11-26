@@ -32,10 +32,16 @@ describe("oxlint config", () => {
     expect(kinds(config(), config())).toEqual([]);
   });
   it("a rule lowered is flagged", () => {
-    expect(kinds(config(), withRules({ [FLOAT]: "warn", "eslint/max-lines": ["error", { max: 1000 }] }))).toEqual(["lowered"]);
+    expect(kinds(config(), withRules({ [FLOAT]: "warn", "eslint/max-lines": ["error", { max: 1000 }] }))).toEqual([
+      "lowered",
+    ]);
   });
   it("a rule turned off is flagged, naming it", () => {
-    const findings = classify(OXLINT, JSON.stringify(config()), JSON.stringify(withRules({ [FLOAT]: "off", "eslint/max-lines": ["error", { max: 1000 }] })));
+    const findings = classify(
+      OXLINT,
+      JSON.stringify(config()),
+      JSON.stringify(withRules({ [FLOAT]: "off", "eslint/max-lines": ["error", { max: 1000 }] })),
+    );
     expect(findings.map((f) => f.kind)).toEqual(["lowered"]);
     expect(findings[0]?.detail).toContain(FLOAT);
   });
@@ -43,13 +49,25 @@ describe("oxlint config", () => {
     expect(kinds(config(), withRules({ "eslint/max-lines": ["error", { max: 1000 }] }))).toEqual(["removed"]);
   });
   it("a rule added passes", () => {
-    expect(kinds(config(), withRules({ [FLOAT]: "error", "eslint/max-lines": ["error", { max: 1000 }], "eslint/no-console": "error" }))).toEqual([]);
+    expect(
+      kinds(
+        config(),
+        withRules({ [FLOAT]: "error", "eslint/max-lines": ["error", { max: 1000 }], "eslint/no-console": "error" }),
+      ),
+    ).toEqual([]);
   });
   it("a rule added as off is flagged", () => {
-    expect(kinds(config(), withRules({ [FLOAT]: "error", "eslint/max-lines": ["error", { max: 1000 }], "eslint/no-console": "off" }))).toEqual(["lowered"]);
+    expect(
+      kinds(
+        config(),
+        withRules({ [FLOAT]: "error", "eslint/max-lines": ["error", { max: 1000 }], "eslint/no-console": "off" }),
+      ),
+    ).toEqual(["lowered"]);
   });
   it("changed options are unclassified", () => {
-    expect(kinds(config(), withRules({ [FLOAT]: "error", "eslint/max-lines": ["error", { max: 5000 }] }))).toEqual(["unclassified"]);
+    expect(kinds(config(), withRules({ [FLOAT]: "error", "eslint/max-lines": ["error", { max: 5000 }] }))).toEqual([
+      "unclassified",
+    ]);
   });
   it("an ignore pattern added is flagged", () => {
     expect(kinds(config(), config({ ignorePatterns: [".scratch", "src/**"] }))).toEqual(["ignored"]);
@@ -61,19 +79,28 @@ describe("oxlint config", () => {
     expect(kinds(config(), config({ options: { typeAware: false } }))).toEqual(["unclassified"]);
   });
   it("a widened override is flagged", () => {
-    const after = config({ overrides: [
-      { files: ["src/**"], rules: { "eslint/no-magic-numbers": ["error", { ignore: [0] }] } },
-      { files: ["**/tests/**", "src/**"], rules: { "eslint/complexity": "off" } },
-    ] });
+    const after = config({
+      overrides: [
+        { files: ["src/**"], rules: { "eslint/no-magic-numbers": ["error", { ignore: [0] }] } },
+        { files: ["**/tests/**", "src/**"], rules: { "eslint/complexity": "off" } },
+      ],
+    });
     expect(kinds(config(), after)).toContain("widened");
   });
   it("a new override that only turns rules on passes", () => {
     const before = config();
-    const after = config({ overrides: [...(before.overrides as unknown[]), { files: ["scripts/**"], rules: { "eslint/no-console": "error" } }] });
+    const after = config({
+      overrides: [
+        ...(before.overrides as unknown[]),
+        { files: ["scripts/**"], rules: { "eslint/no-console": "error" } },
+      ],
+    });
     expect(kinds(before, after)).toEqual([]);
   });
   it("removing an override that only turned rules off passes", () => {
-    const after = config({ overrides: [{ files: ["src/**"], rules: { "eslint/no-magic-numbers": ["error", { ignore: [0] }] } }] });
+    const after = config({
+      overrides: [{ files: ["src/**"], rules: { "eslint/no-magic-numbers": ["error", { ignore: [0] }] } }],
+    });
     expect(kinds(config(), after)).toEqual([]);
   });
   it("removing an override that turned rules on is flagged", () => {
@@ -87,16 +114,28 @@ describe("oxlint config", () => {
 
 describe("other guarded files", () => {
   it("any change to the seams config is flagged", () => {
-    expect(classify(".dependency-cruiser.cjs", "module.exports = { forbidden: [1] };", "module.exports = { forbidden: [] };").map((f) => f.kind)).toEqual(["seams-changed"]);
+    expect(
+      classify(
+        ".dependency-cruiser.cjs",
+        "module.exports = { forbidden: [1] };",
+        "module.exports = { forbidden: [] };",
+      ).map((f) => f.kind),
+    ).toEqual(["seams-changed"]);
   });
   it("an opt-out entry added is flagged", () => {
-    expect(classify("docs/lint-opt-outs.md", "# Opt-outs\n\n- `a`: why\n", "# Opt-outs\n\n- `a`: why\n- `b`: why not\n").map((f) => f.kind)).toEqual(["opt-out-added"]);
+    expect(
+      classify("docs/lint-opt-outs.md", "# Opt-outs\n\n- `a`: why\n", "# Opt-outs\n\n- `a`: why\n- `b`: why not\n").map(
+        (f) => f.kind,
+      ),
+    ).toEqual(["opt-out-added"]);
   });
   it("an opt-out entry removed passes", () => {
     expect(classify("docs/lint-opt-outs.md", "- `a`: why\n- `b`: why\n", "- `a`: why\n")).toEqual([]);
   });
   it("an edited checker script is flagged", () => {
-    expect(classify("scripts/lint-ratchet.ts", "export const a = 1;\n", "export const a = 2;\n").map((f) => f.kind)).toEqual(["checker-changed"]);
+    expect(
+      classify("scripts/lint-ratchet.ts", "export const a = 1;\n", "export const a = 2;\n").map((f) => f.kind),
+    ).toEqual(["checker-changed"]);
   });
   it("a new checker script passes", () => {
     expect(classify("scripts/oxlint/new-rule.js", undefined, "export default {};\n")).toEqual([]);
@@ -114,7 +153,11 @@ describe("other guarded files", () => {
 });
 
 describe("approval", () => {
-  const findings = classify(OXLINT, JSON.stringify(config()), JSON.stringify(withRules({ [FLOAT]: "off", "eslint/max-lines": ["error", { max: 1000 }] })));
+  const findings = classify(
+    OXLINT,
+    JSON.stringify(config()),
+    JSON.stringify(withRules({ [FLOAT]: "off", "eslint/max-lines": ["error", { max: 1000 }] })),
+  );
   it("the trailer clears a finding", () => {
     expect(unapproved(findings, "Ada")).toEqual([]);
   });

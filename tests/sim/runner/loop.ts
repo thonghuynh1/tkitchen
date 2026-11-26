@@ -15,11 +15,18 @@ import type { TraceEntry } from "../world/trace.ts";
 import { SimWorld } from "../world/world.ts";
 
 export interface SeedResult {
-  seed: number; violations: Violation[]; traceHash: string;
-  trace: readonly TraceEntry[]; realGitCalls: number; rounds: number;
-  exportResets: number; exportGenerations: number;
+  seed: number;
+  violations: Violation[];
+  traceHash: string;
+  trace: readonly TraceEntry[];
+  realGitCalls: number;
+  rounds: number;
+  exportResets: number;
+  exportGenerations: number;
 }
-export interface SeedOptions { roundOptions?: RoundOptions; }
+export interface SeedOptions {
+  roundOptions?: RoundOptions;
+}
 
 const ROUND_EVERY_STEPS = 3;
 const ROUND_ADVANCE_MS = 15 * 60 * 1000;
@@ -36,13 +43,23 @@ export async function runSeed(seed: number, options: SeedOptions = {}): Promise<
   const violations: Violation[] = [];
   let rounds = 0;
   try {
-    const developer = new Developer({ rng: world.rng, remote: world.remote, forge: world.forge, config: world.config, trace: world.trace, clock: world.clock });
+    const developer = new Developer({
+      rng: world.rng,
+      remote: world.remote,
+      forge: world.forge,
+      config: world.config,
+      trace: world.trace,
+      clock: world.clock,
+    });
     const exporter = new Exporter(world);
     developer.createInitialTree(MIN_BRANCHES + world.rng.nextInt(BRANCH_SPAN));
     const doRound = async (interleave = true, allowFaults = true): Promise<void> => {
       world.clock.advance(ROUND_ADVANCE_MS);
       const snapshotBefore = world.snapshotStore();
-      if (allowFaults && !world.forge.failNextArmed && world.rng.next() < 0.15) { world.forge.failNext(); world.trace.record(world.clock.nowMs(), "actor.forge-fail", "next forge call fails"); }
+      if (allowFaults && !world.forge.failNextArmed && world.rng.next() < 0.15) {
+        world.forge.failNext();
+        world.trace.record(world.clock.nowMs(), "actor.forge-fail", "next forge call fails");
+      }
       world.forgeFaultPending = world.forge.failNextArmed;
       if (allowFaults && !world.remote.gitFaultArmed && world.rng.next() < 0.15) {
         const method = GIT_METHODS[world.rng.nextInt(GIT_METHODS.length)] ?? "lsRemoteHeads";
@@ -52,19 +69,46 @@ export async function runSeed(seed: number, options: SeedOptions = {}): Promise<
       }
       world.gitFaultPending = world.remote.gitFaultArmed;
       let settled = false;
-      const roundPromise = runRounds({ config: world.config, store: world.store, clock: world.clock, machine: "sim", makeGit: () => world.remote, forge: world.forge, options: options.roundOptions }, undefined)
-        .then((r) => { settled = true; return r; }, (e: unknown) => { settled = true; throw e; });
+      const roundPromise = runRounds(
+        {
+          config: world.config,
+          store: world.store,
+          clock: world.clock,
+          machine: "sim",
+          makeGit: () => world.remote,
+          forge: world.forge,
+          options: options.roundOptions,
+        },
+        undefined,
+      ).then(
+        (r) => {
+          settled = true;
+          return r;
+        },
+        (e: unknown) => {
+          settled = true;
+          throw e;
+        },
+      );
       let spins = 0;
       while (!settled) {
         spins += 1;
         if (spins > MAX_PUMP_SPINS) throw new Error("sim scheduler pump did not settle");
         if (world.clock.pendingCount() > 0) {
           const safeToDelete = world.currentPortMethod !== "lsRemoteHeads" && world.currentPortMethod !== "fetch";
-          if (interleave && world.currentPortMethod !== "fetch" && world.currentPortMethod !== "listOpenPullRequests" && world.rng.next() < INTERLEAVE_CHANCE) developer.act(safeToDelete);
+          if (
+            interleave &&
+            world.currentPortMethod !== "fetch" &&
+            world.currentPortMethod !== "listOpenPullRequests" &&
+            world.rng.next() < INTERLEAVE_CHANCE
+          )
+            developer.act(safeToDelete);
           world.clock.pumpOne();
           await Promise.resolve();
         } else {
-          await new Promise<void>((resolve) => { setImmediate(resolve); });
+          await new Promise<void>((resolve) => {
+            setImmediate(resolve);
+          });
         }
       }
       const result = await roundPromise;
@@ -79,20 +123,47 @@ export async function runSeed(seed: number, options: SeedOptions = {}): Promise<
         world.incompleteSnapshot = snapshotBefore;
         violations.push(...incompleteChangesNothing.check(world));
         world.incompleteSnapshot = null;
-        if (!faultArmed && !result.ok) violations.push({ oracle: "ground-truth", kind: "safety", detail: "round reported failure without a seeded fault: " + (world.store.listRoundStatus()[0]?.lastError ?? "unknown") });
-        if (forgeFaultArmed && gitFaultConsumed && result.ok) violations.push({ oracle: "incomplete-changes-nothing", kind: "safety", detail: "round reported success despite a seeded fault" });
-        if (forgeFaultArmed && !gitFaultConsumed && result.ok && options.roundOptions?.ignoreForgeFailure !== true) violations.push({ oracle: "incomplete-changes-nothing", kind: "safety", detail: "round reported success despite a seeded forge fault" });
-        if (!forgeFaultArmed && gitFaultConsumed && result.ok) violations.push({ oracle: "incomplete-changes-nothing", kind: "safety", detail: "round reported success despite a seeded git fault" });
+        if (!faultArmed && !result.ok)
+          violations.push({
+            oracle: "ground-truth",
+            kind: "safety",
+            detail:
+              "round reported failure without a seeded fault: " +
+              (world.store.listRoundStatus()[0]?.lastError ?? "unknown"),
+          });
+        if (forgeFaultArmed && gitFaultConsumed && result.ok)
+          violations.push({
+            oracle: "incomplete-changes-nothing",
+            kind: "safety",
+            detail: "round reported success despite a seeded fault",
+          });
+        if (forgeFaultArmed && !gitFaultConsumed && result.ok && options.roundOptions?.ignoreForgeFailure !== true)
+          violations.push({
+            oracle: "incomplete-changes-nothing",
+            kind: "safety",
+            detail: "round reported success despite a seeded forge fault",
+          });
+        if (!forgeFaultArmed && gitFaultConsumed && result.ok)
+          violations.push({
+            oracle: "incomplete-changes-nothing",
+            kind: "safety",
+            detail: "round reported success despite a seeded git fault",
+          });
       }
       if (result.ok && !faultArmed) violations.push(...groundTruth.check(world));
-      if (result.ok && faultArmed && options.roundOptions?.ignoreForgeFailure === true) violations.push(...groundTruth.check(world));
+      if (result.ok && faultArmed && options.roundOptions?.ignoreForgeFailure === true)
+        violations.push(...groundTruth.check(world));
     };
     await doRound();
     exporter.run();
     const steps = MIN_STEPS + world.rng.nextInt(STEP_SPAN);
     for (let step = 0; step < steps; step++) {
       developer.act();
-      if ((step + 1) % ROUND_EVERY_STEPS === 0) { await doRound(); exporter.run(); exporter.maybeReset(); }
+      if ((step + 1) % ROUND_EVERY_STEPS === 0) {
+        await doRound();
+        exporter.run();
+        exporter.maybeReset();
+      }
     }
     world.remote.clearGitFaults();
     world.forge.clearFaults();
@@ -105,11 +176,28 @@ export async function runSeed(seed: number, options: SeedOptions = {}): Promise<
     const eventsBefore = world.store.eventCount();
     const dispositionsBefore = world.store.dispositionCount();
     await doRound(false, false);
-    world.quietDelta = { events: world.store.eventCount() - eventsBefore, dispositions: world.store.dispositionCount() - dispositionsBefore };
+    world.quietDelta = {
+      events: world.store.eventCount() - eventsBefore,
+      dispositions: world.store.dispositionCount() - dispositionsBefore,
+    };
     violations.push(...noDuplicates.check(world));
     violations.push(...noTxAcrossPort.check(world));
-    if (world.realGitCalls > 0) violations.push({ oracle: "real-git-in-sim", kind: "safety", detail: "real git executed " + world.realGitCalls + " time(s) inside a sim" });
-    return { seed, violations, traceHash: world.trace.hash(), trace: [...world.trace.all()], realGitCalls: world.realGitCalls, rounds, exportResets: world.exportResetCount, exportGenerations: world.exportGenerations.length };
+    if (world.realGitCalls > 0)
+      violations.push({
+        oracle: "real-git-in-sim",
+        kind: "safety",
+        detail: "real git executed " + world.realGitCalls + " time(s) inside a sim",
+      });
+    return {
+      seed,
+      violations,
+      traceHash: world.trace.hash(),
+      trace: [...world.trace.all()],
+      realGitCalls: world.realGitCalls,
+      rounds,
+      exportResets: world.exportResetCount,
+      exportGenerations: world.exportGenerations.length,
+    };
   } finally {
     world.dispose();
   }
@@ -119,12 +207,17 @@ export function formatSeedFailure(result: SeedResult): string {
   const first = result.violations[0];
   const oracle = first === undefined ? "none" : first.oracle;
   const lines = ["seed=" + result.seed + " oracle=" + oracle];
-  for (const violation of result.violations) lines.push("violation oracle=" + violation.oracle + " " + violation.detail);
+  for (const violation of result.violations)
+    lines.push("violation oracle=" + violation.oracle + " " + violation.detail);
   lines.push(formatTrace(result.trace.slice(Math.max(0, result.trace.length - TRACE_TAIL))));
   return lines.join("\n");
 }
 
-export interface BatchResult { results: SeedResult[]; violations: Violation[]; summary: string; }
+export interface BatchResult {
+  results: SeedResult[];
+  violations: Violation[];
+  summary: string;
+}
 
 export async function runBatch(seeds: number[], options: SeedOptions = {}): Promise<BatchResult> {
   const results: SeedResult[] = [];
@@ -132,7 +225,19 @@ export async function runBatch(seeds: number[], options: SeedOptions = {}): Prom
   const violations = results.flatMap((r) => r.violations);
   const realGitCalls = results.reduce((sum, r) => sum + r.realGitCalls, 0);
   const exportResets = results.reduce((sum, r) => sum + r.exportResets, 0);
-  return { results, violations, summary: "round seeds=" + results.length + " violations=" + violations.length + " realGitCalls=" + realGitCalls + " exportResets=" + exportResets };
+  return {
+    results,
+    violations,
+    summary:
+      "round seeds=" +
+      results.length +
+      " violations=" +
+      violations.length +
+      " realGitCalls=" +
+      realGitCalls +
+      " exportResets=" +
+      exportResets,
+  };
 }
 
 export function seedsFromEnv(): number[] {

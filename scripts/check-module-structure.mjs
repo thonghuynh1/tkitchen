@@ -52,7 +52,8 @@ function collect(root, base, files) {
   for (const entry of readdirSync(absolute, { withFileTypes: true })) {
     const child = base + "/" + entry.name;
     if (entry.isDirectory()) collect(root, child, files);
-    else if (SOURCE_FILE.test(entry.name) && !entry.name.endsWith(".d.ts")) files[child] = readFileSync(join(root, child), "utf8");
+    else if (SOURCE_FILE.test(entry.name) && !entry.name.endsWith(".d.ts"))
+      files[child] = readFileSync(join(root, child), "utf8");
   }
 }
 
@@ -71,6 +72,12 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     console.error(result.errors.join("\n"));
     process.exitCode = 1;
   } else {
-    console.log("Environment and size rules hold: " + result.count + " production files (" + (relative(process.cwd(), directory) || ".") + ").");
+    console.log(
+      "Environment and size rules hold: " +
+        result.count +
+        " production files (" +
+        (relative(process.cwd(), directory) || ".") +
+        ").",
+    );
   }
 }

@@ -8,24 +8,43 @@ import { computeWatchedBranches, statusForBehind, resolveBase, markCycles } from
 import type { BranchState, BaseEvidence, BaseResult } from "../../branches/index.ts";
 import { baseMovedTrigger, threadFor } from "../../triggers/index.ts";
 
-export interface RoundOptions { skipChildMoveRecheck?: boolean; writeInsideCollect?: boolean; ignoreForgeFailure?: boolean; }
+export interface RoundOptions {
+  skipChildMoveRecheck?: boolean;
+  writeInsideCollect?: boolean;
+  ignoreForgeFailure?: boolean;
+}
 export interface RoundDeps {
-  config: Config; store: Store; clock: Clock; machine: string;
+  config: Config;
+  store: Store;
+  clock: Clock;
+  machine: string;
   makeGit: (repo: RepoConfig) => GitRepo;
   forge: Forge;
   options?: RoundOptions | undefined;
 }
-interface Child { branch: string; base: string; evidence: string; }
+interface Child {
+  branch: string;
+  base: string;
+  evidence: string;
+}
 const MAX_CANDIDATES = 200;
 const HEX_START = /^[0-9a-f]{7,40}$/i;
-function refFor(remote: string, branch: string): string { return "refs/remotes/" + remote + "/" + branch; }
+function refFor(remote: string, branch: string): string {
+  return "refs/remotes/" + remote + "/" + branch;
+}
 function mapsEqual(a: ReadonlyMap<string, string>, b: ReadonlyMap<string, string>): boolean {
   if (a.size !== b.size) return false;
   for (const [k, v] of a) if (b.get(k) !== v) return false;
   return true;
 }
-function cacheKey(a: string, b: string): string { return a + "\0" + b; }
-async function collectAncestorCache(git: GitRepo, remote: string, heads: ReadonlyMap<string, string>): Promise<(a: string, b: string) => boolean> {
+function cacheKey(a: string, b: string): string {
+  return a + "\0" + b;
+}
+async function collectAncestorCache(
+  git: GitRepo,
+  remote: string,
+  heads: ReadonlyMap<string, string>,
+): Promise<(a: string, b: string) => boolean> {
   const cache = new Map<string, boolean>();
   const branches = [...heads.keys()];
   for (const a of branches) {
@@ -67,37 +86,57 @@ function prTargetsByHead(prs: readonly PullRequest[]): Map<string, string[]> {
   }
   return out;
 }
-async function gatherEvidence(git: GitRepo, repo: RepoConfig, branch: string, heads: ReadonlyMap<string, string>, prTargets: ReadonlyMap<string, string[]>): Promise<BaseEvidence> {
+async function gatherEvidence(
+  git: GitRepo,
+  repo: RepoConfig,
+  branch: string,
+  heads: ReadonlyMap<string, string>,
+  prTargets: ReadonlyMap<string, string[]>,
+): Promise<BaseEvidence> {
   const pushed = new Set(heads.keys());
   const explicit = repo.bases[branch] ?? null;
   const base: BaseEvidence = { branch, explicit, prTargets: prTargets.get(branch) ?? [], creation: null, pushed };
   if (explicit !== null && explicit !== branch && pushed.has(explicit)) return base;
   const creation = await git.creationReflog(branch);
   if (creation === null) return base;
-  if (creation.createdFrom === creation.oid || (HEX_START.test(creation.createdFrom) && creation.oid.toLowerCase().startsWith(creation.createdFrom.toLowerCase()))) {
-    const candidates = [...pushed].filter((c) => c !== branch).sort().slice(0, MAX_CANDIDATES);
+  if (
+    creation.createdFrom === creation.oid ||
+    (HEX_START.test(creation.createdFrom) && creation.oid.toLowerCase().startsWith(creation.createdFrom.toLowerCase()))
+  ) {
+    const candidates = [...pushed]
+      .filter((c) => c !== branch)
+      .sort()
+      .slice(0, MAX_CANDIDATES);
     const matches: string[] = [];
     for (const candidate of candidates) {
       const remoteTip = await git.tipAt(refFor(repo.remote, candidate), creation.unixSeconds);
-      const localTip = remoteTip === creation.oid ? null : await git.tipAt("refs/heads/" + candidate, creation.unixSeconds);
+      const localTip =
+        remoteTip === creation.oid ? null : await git.tipAt("refs/heads/" + candidate, creation.unixSeconds);
       if (remoteTip === creation.oid || localTip === creation.oid) matches.push(candidate);
       if (matches.length > 1) break;
     }
     const only = matches[0];
-    const startIsAncestorOfMatch = matches.length === 1 && only !== undefined
-      ? await git.isAncestor(creation.oid, refFor(repo.remote, only))
-      : false;
+    const startIsAncestorOfMatch =
+      matches.length === 1 && only !== undefined
+        ? await git.isAncestor(creation.oid, refFor(repo.remote, only))
+        : false;
     return { ...base, creation: { kind: "commit", matches, startIsAncestorOfMatch } };
   }
   const name = normalizeCreatedName(creation.createdFrom, repo.remote);
-  const startIsAncestor = name !== branch && pushed.has(name)
-    ? await git.isAncestor(creation.oid, refFor(repo.remote, name))
-    : false;
+  const startIsAncestor =
+    name !== branch && pushed.has(name) ? await git.isAncestor(creation.oid, refFor(repo.remote, name)) : false;
   return { ...base, creation: { kind: "named", name, startIsAncestor } };
 }
-async function resolveAll(git: GitRepo, repo: RepoConfig, branches: string[], heads: ReadonlyMap<string, string>, prTargets: ReadonlyMap<string, string[]>): Promise<Map<string, BaseResult>> {
+async function resolveAll(
+  git: GitRepo,
+  repo: RepoConfig,
+  branches: string[],
+  heads: ReadonlyMap<string, string>,
+  prTargets: ReadonlyMap<string, string[]>,
+): Promise<Map<string, BaseResult>> {
   const results = new Map<string, BaseResult>();
-  for (const branch of branches) results.set(branch, resolveBase(await gatherEvidence(git, repo, branch, heads, prTargets)));
+  for (const branch of branches)
+    results.set(branch, resolveBase(await gatherEvidence(git, repo, branch, heads, prTargets)));
   return markCycles(results);
 }
 function collectChildren(watched: string[], resolved: Map<string, BaseResult>): Child[] {
@@ -117,7 +156,15 @@ function indexChildren(children: Child[]): Map<string, string[]> {
   }
   return childIndex;
 }
-function collectEvents(input: { firstRound: boolean; childIndex: Map<string, string[]>; storedHeads: ReadonlyMap<string, string>; heads: ReadonlyMap<string, string>; repo: RepoConfig; at: string; machine: string }): { events: Trigger[]; movedChildren: Set<string>; triggerByChild: Map<string, string> } {
+function collectEvents(input: {
+  firstRound: boolean;
+  childIndex: Map<string, string[]>;
+  storedHeads: ReadonlyMap<string, string>;
+  heads: ReadonlyMap<string, string>;
+  repo: RepoConfig;
+  at: string;
+  machine: string;
+}): { events: Trigger[]; movedChildren: Set<string>; triggerByChild: Map<string, string> } {
   const events: Trigger[] = [];
   const movedChildren = new Set<string>();
   const triggerByChild = new Map<string, string>();
@@ -126,25 +173,69 @@ function collectEvents(input: { firstRound: boolean; childIndex: Map<string, str
     const oldHead = input.storedHeads.get(base);
     const newHead = input.heads.get(base);
     if (oldHead === undefined || newHead === undefined || oldHead === newHead) continue;
-    const trigger = baseMovedTrigger({ repo: input.repo.name, base, oldHead, newHead, children: kids, at: input.at, machine: input.machine });
+    const trigger = baseMovedTrigger({
+      repo: input.repo.name,
+      base,
+      oldHead,
+      newHead,
+      children: kids,
+      at: input.at,
+      machine: input.machine,
+    });
     events.push(trigger);
-    for (const kid of kids) { movedChildren.add(kid); triggerByChild.set(kid, trigger.id); }
+    for (const kid of kids) {
+      movedChildren.add(kid);
+      triggerByChild.set(kid, trigger.id);
+    }
   }
   return { events, movedChildren, triggerByChild };
 }
-function isStale(input: { prev: BranchState | undefined; headOid: string; baseOid: string; base: string; firstRound: boolean; moved: boolean; skipChildMoveRecheck: boolean }): boolean {
+function isStale(input: {
+  prev: BranchState | undefined;
+  headOid: string;
+  baseOid: string;
+  base: string;
+  firstRound: boolean;
+  moved: boolean;
+  skipChildMoveRecheck: boolean;
+}): boolean {
   if (input.firstRound || input.prev === undefined) return true;
   if (input.skipChildMoveRecheck) return input.moved;
-  return input.prev.headOid !== input.headOid || input.prev.baseOid !== input.baseOid || input.prev.base !== input.base || input.moved;
+  return (
+    input.prev.headOid !== input.headOid ||
+    input.prev.baseOid !== input.baseOid ||
+    input.prev.base !== input.base ||
+    input.moved
+  );
 }
-async function collectStates(input: { git: GitRepo; remote: string; children: Child[]; heads: ReadonlyMap<string, string>; storedStates: ReadonlyMap<string, BranchState>; firstRound: boolean; movedChildren: Set<string>; triggerByChild: Map<string, string>; repo: RepoConfig; at: string; skipChildMoveRecheck: boolean }): Promise<{ states: BranchState[]; behindByChild: Map<string, number> }> {
+async function collectStates(input: {
+  git: GitRepo;
+  remote: string;
+  children: Child[];
+  heads: ReadonlyMap<string, string>;
+  storedStates: ReadonlyMap<string, BranchState>;
+  firstRound: boolean;
+  movedChildren: Set<string>;
+  triggerByChild: Map<string, string>;
+  repo: RepoConfig;
+  at: string;
+  skipChildMoveRecheck: boolean;
+}): Promise<{ states: BranchState[]; behindByChild: Map<string, number> }> {
   const states: BranchState[] = [];
   const behindByChild = new Map<string, number>();
   for (const c of input.children) {
     const headOid = input.heads.get(c.branch) ?? "";
     const baseOid = input.heads.get(c.base) ?? "";
     const prev = input.storedStates.get(c.branch);
-    const stale = isStale({ prev, headOid, baseOid, base: c.base, firstRound: input.firstRound, moved: input.movedChildren.has(c.branch), skipChildMoveRecheck: input.skipChildMoveRecheck });
+    const stale = isStale({
+      prev,
+      headOid,
+      baseOid,
+      base: c.base,
+      firstRound: input.firstRound,
+      moved: input.movedChildren.has(c.branch),
+      skipChildMoveRecheck: input.skipChildMoveRecheck,
+    });
     let behindBy: number;
     if (stale || prev?.behindBy === undefined || prev?.behindBy === null) {
       behindBy = await input.git.countBehind(refFor(input.remote, c.branch), refFor(input.remote, c.base));
@@ -153,11 +244,29 @@ async function collectStates(input: { git: GitRepo; remote: string; children: Ch
     const status = statusForBehind(behindBy);
     const since = prev !== undefined && prev.status === status ? prev.since : input.at;
     const lastEventId = input.triggerByChild.get(c.branch) ?? prev?.lastEventId ?? null;
-    states.push({ repo: input.repo.name, branch: c.branch, base: c.base, baseEvidence: c.evidence, headOid, baseOid, behindBy, status, since, lastEventId });
+    states.push({
+      repo: input.repo.name,
+      branch: c.branch,
+      base: c.base,
+      baseEvidence: c.evidence,
+      headOid,
+      baseOid,
+      behindBy,
+      status,
+      since,
+      lastEventId,
+    });
   }
   return { states, behindByChild };
 }
-function collectUnresolvedStates(input: { watched: string[]; resolved: Map<string, BaseResult>; heads: ReadonlyMap<string, string>; storedStates: ReadonlyMap<string, BranchState>; repo: RepoConfig; at: string }): BranchState[] {
+function collectUnresolvedStates(input: {
+  watched: string[];
+  resolved: Map<string, BaseResult>;
+  heads: ReadonlyMap<string, string>;
+  storedStates: ReadonlyMap<string, BranchState>;
+  repo: RepoConfig;
+  at: string;
+}): BranchState[] {
   const states: BranchState[] = [];
   for (const branch of input.watched) {
     const result = input.resolved.get(branch);
@@ -166,21 +275,45 @@ function collectUnresolvedStates(input: { watched: string[]; resolved: Map<strin
     const status = result.kind;
     const since = prev !== undefined && prev.status === status ? prev.since : input.at;
     states.push({
-      repo: input.repo.name, branch, base: null,
+      repo: input.repo.name,
+      branch,
+      base: null,
       baseEvidence: result.kind === "ambiguous" ? result.reason : null,
-      headOid: input.heads.get(branch) ?? "", baseOid: null, behindBy: null,
-      status, since, lastEventId: prev?.lastEventId ?? null,
+      headOid: input.heads.get(branch) ?? "",
+      baseOid: null,
+      behindBy: null,
+      status,
+      since,
+      lastEventId: prev?.lastEventId ?? null,
     });
   }
   return states;
 }
-function collectDispositions(input: { events: Trigger[]; childIndex: Map<string, string[]>; behindByChild: Map<string, number>; repo: RepoConfig; at: string }): Disposition[] {
+function collectDispositions(input: {
+  events: Trigger[];
+  childIndex: Map<string, string[]>;
+  behindByChild: Map<string, number>;
+  repo: RepoConfig;
+  at: string;
+}): Disposition[] {
   const dispositions: Disposition[] = [];
   for (const trigger of input.events) {
     const kids = input.childIndex.get(trigger.meta.base) ?? [];
     for (const kid of kids) {
       const behindBy = input.behindByChild.get(kid) ?? 0;
-      dispositions.push({ eventId: trigger.id, thread: threadFor(input.repo.name, kid), consumer: "notice", filtered: false, outcome: behindBy > 0 ? "behind" : "up_to_date", outcomeEventId: null, ruleId: "notice.base-moved", policyVersion: 1, handbacks: [], at: input.at, meta: { behindBy } });
+      dispositions.push({
+        eventId: trigger.id,
+        thread: threadFor(input.repo.name, kid),
+        consumer: "notice",
+        filtered: false,
+        outcome: behindBy > 0 ? "behind" : "up_to_date",
+        outcomeEventId: null,
+        ruleId: "notice.base-moved",
+        policyVersion: 1,
+        handbacks: [],
+        at: input.at,
+        meta: { behindBy },
+      });
     }
   }
   return dispositions;
@@ -190,8 +323,9 @@ export async function runRoundForRepo(deps: RoundDeps, repo: RepoConfig): Promis
   const remote = repo.remote;
   const { heads, defaultBranch } = await git.lsRemoteHeads(remote);
   let prs: PullRequest[];
-  try { prs = await deps.forge.listOpenPullRequests(repo); }
-  catch (e) {
+  try {
+    prs = await deps.forge.listOpenPullRequests(repo);
+  } catch (e) {
     if (deps.options?.ignoreForgeFailure === true && e instanceof PortError) prs = [];
     else throw e;
   }
@@ -208,11 +342,31 @@ export async function runRoundForRepo(deps: RoundDeps, repo: RepoConfig): Promis
   const children = collectChildren(watched, resolved);
   const childIndex = indexChildren(children);
   const at = deps.clock.now().toISOString();
-  const { events, movedChildren, triggerByChild } = collectEvents({ firstRound, childIndex, storedHeads, heads, repo, at, machine: deps.machine });
+  const { events, movedChildren, triggerByChild } = collectEvents({
+    firstRound,
+    childIndex,
+    storedHeads,
+    heads,
+    repo,
+    at,
+    machine: deps.machine,
+  });
   const skipChildMoveRecheck = deps.options?.skipChildMoveRecheck === true;
   const writeInsideCollect = deps.options?.writeInsideCollect === true;
   if (writeInsideCollect) deps.store.beginTx?.();
-  const { states, behindByChild } = await collectStates({ git, remote, children, heads, storedStates, firstRound, movedChildren, triggerByChild, repo, at, skipChildMoveRecheck });
+  const { states, behindByChild } = await collectStates({
+    git,
+    remote,
+    children,
+    heads,
+    storedStates,
+    firstRound,
+    movedChildren,
+    triggerByChild,
+    repo,
+    at,
+    skipChildMoveRecheck,
+  });
   if (writeInsideCollect) deps.store.commitTx?.();
   states.push(...collectUnresolvedStates({ watched, resolved, heads, storedStates, repo, at }));
   const dispositions = collectDispositions({ events, childIndex, behindByChild, repo, at });
@@ -223,11 +377,15 @@ export async function runRounds(deps: RoundDeps, onlyRepo?: string): Promise<{ o
   let ok = true;
   for (const repo of cfg.repos) {
     if (onlyRepo !== undefined && repo.name !== onlyRepo) continue;
-    try { await runRoundForRepo(deps, repo); }
-    catch (e) {
+    try {
+      await runRoundForRepo(deps, repo);
+    } catch (e) {
       ok = false;
-      if (e instanceof PortError) { try { deps.store.recordRoundError(repo.name, e.message); } catch { } }
-      else throw e;
+      if (e instanceof PortError) {
+        try {
+          deps.store.recordRoundError(repo.name, e.message);
+        } catch {}
+      } else throw e;
     }
   }
   if (onlyRepo !== undefined && !cfg.repos.some((r) => r.name === onlyRepo)) ok = false;

@@ -1,6 +1,9 @@
 import type { Trace } from "./trace.ts";
 
-export interface DeterminismResult { deterministic: boolean; hashes: [string, string]; }
+export interface DeterminismResult {
+  deterministic: boolean;
+  hashes: [string, string];
+}
 
 export async function checkDeterminism(run: () => Promise<string>): Promise<DeterminismResult> {
   const first = await run();
@@ -8,4 +11,6 @@ export async function checkDeterminism(run: () => Promise<string>): Promise<Dete
   return { deterministic: first === second, hashes: [first, second] };
 }
 
-export function traceHashOf(trace: Trace): string { return trace.hash(); }
+export function traceHashOf(trace: Trace): string {
+  return trace.hash();
+}

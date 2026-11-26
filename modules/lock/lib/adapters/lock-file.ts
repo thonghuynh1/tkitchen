@@ -5,7 +5,6 @@ import type { Lock } from "../contract.ts";
 
 import { kitchenHome } from "../../../platform/adapters.ts";
 
-
 const MAX_ACQUIRE_ATTEMPTS = 100;
 const LOCK_WRITE_GRACE_MS = 1000;
 const GUARD_RETRY_MS = 10;
@@ -111,7 +110,9 @@ async function isFresh(path: string): Promise<boolean> {
 }
 
 function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => { setTimeout(resolve, ms); });
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 interface FileSnapshot {
@@ -136,7 +137,10 @@ async function readSnapshotAt(path: string, decodePid: (raw: string) => number |
 type TakeoverResult = "acquired" | "held" | "retry";
 
 function recoveryName(path: string, owner: string): string {
-  return createHash("sha256").update(basename(path) + "\0" + owner).digest("hex").slice(0, DIGEST_HEX_LENGTH);
+  return createHash("sha256")
+    .update(basename(path) + "\0" + owner)
+    .digest("hex")
+    .slice(0, DIGEST_HEX_LENGTH);
 }
 
 async function listNames(dir: string): Promise<string[]> {
@@ -187,13 +191,14 @@ export class FileLock implements Lock {
     const judged = await readSnapshotAt(path, ticketPid);
     if (judged === null) return;
     if (judged.pid !== null && pidIsAlive(judged.pid)) return;
-    if (judged.pid === null && await isFresh(path)) return;
-    const recoveryPath = this.path + ".recover-" + recoveryName(path, judged.pid === null ? "invalid-" + judged.key : String(judged.pid));
+    if (judged.pid === null && (await isFresh(path))) return;
+    const recoveryPath =
+      this.path + ".recover-" + recoveryName(path, judged.pid === null ? "invalid-" + judged.key : String(judged.pid));
     const recoveryPublishPath = recoveryPath + ".publish-" + this.pid;
-    if (!await this.publish(recoveryPath, String(this.pid), recoveryPublishPath)) {
+    if (!(await this.publish(recoveryPath, String(this.pid), recoveryPublishPath))) {
       const recoveryPid = await readTicketPidAt(recoveryPath);
       if (recoveryPid !== null && pidIsAlive(recoveryPid)) return;
-      if (recoveryPid === null && await isFresh(recoveryPath)) return;
+      if (recoveryPid === null && (await isFresh(recoveryPath))) return;
       await this.clearDeadTicket(recoveryPath);
       return;
     }
@@ -207,7 +212,7 @@ export class FileLock implements Lock {
   }
   private async takeOverStale(judged: FileSnapshot): Promise<TakeoverResult> {
     const content = JSON.stringify({ pid: this.pid, key: judged.key });
-    if (!await this.publish(this.takeoverPath, content, this.takeoverPublishPath)) {
+    if (!(await this.publish(this.takeoverPath, content, this.takeoverPublishPath))) {
       await this.clearDeadTicket(this.takeoverPath);
       return "retry";
     }
@@ -221,7 +226,7 @@ export class FileLock implements Lock {
       const holder = await readSnapshotAt(this.path, pidFromJson);
       return holder !== null && holder.pid !== null && pidIsAlive(holder.pid) ? "held" : "retry";
     } finally {
-      if (await readTicketPidAt(this.takeoverPath) === this.pid) await discardAt(this.takeoverPath);
+      if ((await readTicketPidAt(this.takeoverPath)) === this.pid) await discardAt(this.takeoverPath);
     }
   }
   private async clearDeadRecoveryTickets(): Promise<void> {
@@ -241,7 +246,7 @@ export class FileLock implements Lock {
       if (await this.tryCreate()) return "acquired";
       const holder = await readSnapshotAt(this.path, pidFromJson);
       if (holder !== null && holder.pid !== null && pidIsAlive(holder.pid)) return "held";
-      if (holder !== null && holder.pid === null && await isFresh(this.path)) return "held";
+      if (holder !== null && holder.pid === null && (await isFresh(this.path))) return "held";
       if (holder === null) continue;
       const result = await this.takeOverStale(holder);
       if (result !== "retry") return result;
@@ -250,8 +255,8 @@ export class FileLock implements Lock {
     return "held";
   }
   async release(): Promise<void> {
-    if (await readPidAt(this.path) !== this.pid) return;
-    if (!await claimTo(this.path, this.claimPath)) return;
+    if ((await readPidAt(this.path)) !== this.pid) return;
+    if (!(await claimTo(this.path, this.claimPath))) return;
     const claimed = await readPidAt(this.claimPath);
     if (claimed === this.pid) {
       await discardAt(this.claimPath);

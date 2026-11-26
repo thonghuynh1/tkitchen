@@ -8,18 +8,31 @@ import type { GitRunResult } from "../adapters.ts";
 import { PortError } from "../../platform/index.ts";
 
 const FATAL: GitRunResult = { stdout: "", stderr: "fatal: unable to read reflog: Permission denied", code: 128 };
-const ABSENT: GitRunResult = { stdout: "", stderr: "fatal: ambiguous argument 'refs/heads/nope': unknown revision or path not in the working tree.\nUse '--' to separate paths from revisions, like this:\n'git <command> [<revision>...] -- [<file>...]'", code: 128 };
+const ABSENT: GitRunResult = {
+  stdout: "",
+  stderr:
+    "fatal: ambiguous argument 'refs/heads/nope': unknown revision or path not in the working tree.\nUse '--' to separate paths from revisions, like this:\n'git <command> [<revision>...] -- [<file>...]'",
+  code: 128,
+};
 
 describe("git reflog failure classification", () => {
   it("fatal reflog exit raises PortError failed from creationReflog and tipAt", async () => {
     const repo = new GitRepoImpl("unused", async () => FATAL);
     let creation: unknown = null;
-    try { await repo.creationReflog("feature"); } catch (e) { creation = e; }
+    try {
+      await repo.creationReflog("feature");
+    } catch (e) {
+      creation = e;
+    }
     expect(creation).toBeInstanceOf(PortError);
     expect(creation instanceof PortError ? creation.kind : "").toBe("failed");
     expect(creation instanceof Error ? creation.message : "").toContain("reflog");
     let tip: unknown = null;
-    try { await repo.tipAt("refs/heads/main", 1); } catch (e) { tip = e; }
+    try {
+      await repo.tipAt("refs/heads/main", 1);
+    } catch (e) {
+      tip = e;
+    }
     expect(tip).toBeInstanceOf(PortError);
     expect(tip instanceof PortError ? tip.kind : "").toBe("failed");
   });
