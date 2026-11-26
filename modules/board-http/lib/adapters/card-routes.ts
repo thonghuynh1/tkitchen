@@ -3,6 +3,7 @@ import { isCardColumn, isCardId, isInviteToken } from "../../../cards/index.ts";
 import type { CardService } from "../../../cards/index.ts";
 import { isUserId } from "../../../identities/index.ts";
 import type { Viewer } from "../../../identities/index.ts";
+import type { LiveHub } from "../../../live/index.ts";
 import { viewerFromRequest } from "./auth-routes.ts";
 import type { AuthContext } from "./auth-routes.ts";
 
@@ -136,6 +137,7 @@ function decodeSegment(raw: string): string | null {
 
 async function createCardReply(
   cards: CardService,
+  live: LiveHub | null,
   viewer: Viewer,
   req: IncomingMessage,
   res: ServerResponse,
@@ -161,11 +163,13 @@ async function createCardReply(
     sendJson(res, status, { ok: false, error });
     return;
   }
+  live?.broadcast(outcome.card.memberIds, "card_created", { card: outcome.card });
   sendJson(res, STATUS_CREATED, { ok: true, card: outcome.card });
 }
 
 async function moveCardReply(
   cards: CardService,
+  live: LiveHub | null,
   viewer: Viewer,
   cardSegment: string,
   req: IncomingMessage,
@@ -192,6 +196,7 @@ async function moveCardReply(
     sendJson(res, status, { ok: false, error });
     return;
   }
+  live?.broadcast(outcome.card.memberIds, "card_moved", { cardId: outcome.card.id, column: outcome.card.column });
   sendJson(res, STATUS_OK, { ok: true, card: outcome.card });
 }
 
@@ -239,6 +244,7 @@ function redeemReply(cards: CardService, viewer: Viewer, tokenSegment: string, r
 
 function removeMemberReply(
   cards: CardService,
+  live: LiveHub | null,
   viewer: Viewer,
   cardSegment: string,
   userSegment: string,
@@ -265,10 +271,17 @@ function removeMemberReply(
     } else sendJson(res, STATUS_NOT_FOUND, { ok: false, error: "card not found" });
     return;
   }
+  live?.revokeCardAccess(outcome.card.id, outcome.removedUserIds);
   sendJson(res, STATUS_OK, { ok: true, removedUserId: outcome.removedUserId });
 }
 
-function closeSharingReply(cards: CardService, viewer: Viewer, cardSegment: string, res: ServerResponse): void {
+function closeSharingReply(
+  cards: CardService,
+  live: LiveHub | null,
+  viewer: Viewer,
+  cardSegment: string,
+  res: ServerResponse,
+): void {
   if (!viewer.isOwner) {
     sendJson(res, STATUS_FORBIDDEN, { ok: false, error: "forbidden" });
     return;
@@ -284,10 +297,17 @@ function closeSharingReply(cards: CardService, viewer: Viewer, cardSegment: stri
     sendJson(res, status, { ok: false, error });
     return;
   }
+  live?.revokeCardAccess(outcome.card.id, outcome.removedUserIds);
   sendJson(res, STATUS_OK, { ok: true, removedUserIds: outcome.removedUserIds });
 }
 
-function archiveCardReply(cards: CardService, viewer: Viewer, cardSegment: string, res: ServerResponse): void {
+function archiveCardReply(
+  cards: CardService,
+  live: LiveHub | null,
+  viewer: Viewer,
+  cardSegment: string,
+  res: ServerResponse,
+): void {
   if (!viewer.isOwner) {
     sendJson(res, STATUS_FORBIDDEN, { ok: false, error: "forbidden" });
     return;
@@ -303,12 +323,15 @@ function archiveCardReply(cards: CardService, viewer: Viewer, cardSegment: strin
     sendJson(res, status, { ok: false, error });
     return;
   }
+  live?.revokeCardAccess(outcome.card.id, outcome.removedUserIds);
+  live?.broadcast([viewer.user.id], "card_removed", { cardId: outcome.card.id });
   sendJson(res, STATUS_OK, { ok: true, archivedAt: outcome.archivedAt, removedUserIds: outcome.removedUserIds });
 }
 
 export async function routeCards(
   auth: AuthContext | null,
   cards: CardService | null,
+  live: LiveHub | null,
   req: IncomingMessage,
   res: ServerResponse,
   url: URL,
@@ -336,10 +359,10 @@ export async function routeCards(
       sendJson(res, STATUS_OK, { ok: true, cards: cards.listCards(viewer) });
       return;
     case "create":
-      await createCardReply(cards, viewer, req, res);
+      await createCardReply(cards, live, viewer, req, res);
       return;
     case "move":
-      await moveCardReply(cards, viewer, matched.cardSegment, req, res);
+      await moveCardReply(cards, live, viewer, matched.cardSegment, req, res);
       return;
     case "invite":
       inviteReply(auth, cards, viewer, matched.cardSegment, res);
@@ -348,13 +371,13 @@ export async function routeCards(
       redeemReply(cards, viewer, matched.tokenSegment, res);
       return;
     case "remove-member":
-      removeMemberReply(cards, viewer, matched.cardSegment, matched.userSegment, res);
+      removeMemberReply(cards, live, viewer, matched.cardSegment, matched.userSegment, res);
       return;
     case "close-sharing":
-      closeSharingReply(cards, viewer, matched.cardSegment, res);
+      closeSharingReply(cards, live, viewer, matched.cardSegment, res);
       return;
     case "archive":
-      archiveCardReply(cards, viewer, matched.cardSegment, res);
+      archiveCardReply(cards, live, viewer, matched.cardSegment, res);
       return;
   }
 }

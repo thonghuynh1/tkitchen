@@ -19,8 +19,11 @@ import { ReadOnlyExportStore } from "../../../export/adapters.ts";
 import { startBoardServer } from "../../../board-http/adapters.ts";
 import { CardService } from "../../../cards/index.ts";
 import { SqliteCardStore } from "../../../cards/adapters.ts";
+import { ChatService } from "../../../chat/index.ts";
+import { SqliteChatStore } from "../../../chat/adapters.ts";
 import { IdentityService, normalizeOwnerId } from "../../../identities/index.ts";
 import { LiveGitHubOAuth, SqliteIdentityStore } from "../../../identities/adapters.ts";
+import { InMemoryLiveHub } from "../../../live/index.ts";
 import { normalizePublicUrl, parseCommand, USAGE } from "../parse.ts";
 
 const EXIT_USAGE = 2;
@@ -145,12 +148,28 @@ async function runBoard(port: number, host: string, publicUrlWord: string | unde
     console.error(signIn.complaint);
     return EXIT_USAGE;
   }
-  const cardStore = signIn.identities === undefined ? undefined : new SqliteCardStore(join(kitchenHome(), "board.db"));
+  const boardDb = join(kitchenHome(), "board.db");
+  const cardStore = signIn.identities === undefined ? undefined : new SqliteCardStore(boardDb);
   const cards =
     cardStore === undefined
       ? undefined
       : new CardService({ store: cardStore, clock: new SystemClock(), ids: new SystemIds() });
-  const board = await startBoardServer({ port, host, webRoot, publicUrl, identities: signIn.identities, cards });
+  const chatStore = cardStore === undefined ? undefined : new SqliteChatStore(boardDb);
+  const chat =
+    chatStore === undefined || cardStore === undefined
+      ? undefined
+      : new ChatService({ store: chatStore, cards: cardStore, clock: new SystemClock(), ids: new SystemIds() });
+  const live = signIn.identities === undefined ? undefined : new InMemoryLiveHub();
+  const board = await startBoardServer({
+    port,
+    host,
+    webRoot,
+    publicUrl,
+    identities: signIn.identities,
+    cards,
+    chat,
+    live,
+  });
   console.log("board at " + board.url);
   if (signIn.identities !== undefined) console.log("sign-in via " + board.publicUrl);
   await new Promise<void>((resolveStop) => {
@@ -163,6 +182,7 @@ async function runBoard(port: number, host: string, publicUrlWord: string | unde
     process.on("SIGTERM", onSignal);
   });
   await board.close();
+  chatStore?.close();
   cardStore?.close();
   signIn.store?.close();
   return 0;

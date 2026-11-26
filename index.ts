@@ -59,6 +59,20 @@ export type {
   RemoveMemberOutcome,
 } from "./modules/cards/index.ts";
 export { SqliteCardStore } from "./modules/cards/adapters.ts";
+export { ChatService, isChatEntryId, parseMentionsWaiter } from "./modules/chat/index.ts";
+export type {
+  ChatCardAccess,
+  ChatEntry,
+  ChatEntryId,
+  ChatServiceDeps,
+  ChatStore,
+  ListChatOutcome,
+  NewChatEntry,
+  PostChatOutcome,
+} from "./modules/chat/index.ts";
+export { SqliteChatStore } from "./modules/chat/adapters.ts";
+export { formatSseFrame, InMemoryLiveHub } from "./modules/live/index.ts";
+export type { LiveFrameKind, LiveHandle, LiveHub } from "./modules/live/index.ts";
 export { parseCommand, USAGE } from "./modules/cli/index.ts";
 export type { Command, ParsedCommand } from "./modules/cli/index.ts";
 export { runCli } from "./modules/cli/adapters.ts";

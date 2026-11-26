@@ -4,10 +4,14 @@ import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { resolve, sep } from "node:path";
 import type { CardService } from "../../../cards/index.ts";
+import type { ChatService } from "../../../chat/index.ts";
+import type { LiveHub } from "../../../live/index.ts";
 import { contentTypeFor } from "../content-types.ts";
 import { isAuthPath, routeAuth } from "./auth-routes.ts";
 import type { AuthContext } from "./auth-routes.ts";
 import { isCardsPath, routeCards } from "./card-routes.ts";
+import { isCardChatPath, routeChat } from "./chat-routes.ts";
+import { isStreamPath, routeStream } from "./live-routes.ts";
 import type { BoardServer, BoardServerOptions } from "../contract.ts";
 
 const HEALTH_PATH = "/v1/health";
@@ -40,6 +44,8 @@ async function respond(
   webRoot: string,
   auth: AuthContext | null,
   cards: CardService | null,
+  chat: ChatService | null,
+  live: LiveHub | null,
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
@@ -48,8 +54,16 @@ async function respond(
     await routeAuth(auth, req, res, url);
     return;
   }
+  if (isStreamPath(url.pathname)) {
+    routeStream(auth, live, req, res);
+    return;
+  }
+  if (isCardChatPath(url.pathname)) {
+    await routeChat(auth, cards, chat, live, req, res, url);
+    return;
+  }
   if (isCardsPath(url.pathname)) {
-    await routeCards(auth, cards, req, res, url);
+    await routeCards(auth, cards, live, req, res, url);
     return;
   }
   if (req.method !== "GET") {
@@ -74,8 +88,10 @@ export function startBoardServer(options: BoardServerOptions): Promise<BoardServ
   const auth: AuthContext | null =
     options.identities === undefined ? null : { identities: options.identities, publicUrl: options.publicUrl ?? "" };
   const cards: CardService | null = options.cards ?? null;
+  const chat: ChatService | null = options.chat ?? null;
+  const live: LiveHub | null = options.live ?? null;
   const server = createServer((req, res) => {
-    respond(webRoot, auth, cards, req, res).catch((error: unknown) => {
+    respond(webRoot, auth, cards, chat, live, req, res).catch((error: unknown) => {
       if (!res.headersSent) res.writeHead(STATUS_INTERNAL, { "content-type": "application/json" });
       res.end(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : "request failed" }));
     });
@@ -96,9 +112,11 @@ export function startBoardServer(options: BoardServerOptions): Promise<BoardServ
         publicUrl,
         close: () =>
           new Promise<void>((resolveClose) => {
+            live?.closeAll();
             server.close(() => {
               resolveClose();
             });
+            server.closeAllConnections();
           }),
       });
     });
