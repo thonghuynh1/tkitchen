@@ -27,7 +27,10 @@ class FakeGitHub implements GitHubOAuthPort {
 }
 
 class CountingIds {
-  private counter = 0;
+  private counter: number;
+  constructor(start = 0) {
+    this.counter = start;
+  }
   next(): string {
     this.counter += 1;
     return "00000000-0000-4000-8000-" + String(this.counter).padStart(12, "0");
@@ -398,5 +401,57 @@ describe("board cards HTTP", () => {
     await board.close();
     board = await startBoardServer({ port: 0, host: "127.0.0.1", webRoot: home });
     expect((await requestJson("/v1/cards")).status).toBe(503);
+  });
+
+  it("denies column move by a replacement host owner who is not a member of an existing card", async () => {
+    const ownerSession = await signIn("owner");
+    const createdBody = await readJson(
+      await requestJson("/v1/cards", { method: "POST", session: ownerSession, body: { title: "Handover card" } }),
+    );
+    const cardId = stringProp(recordProp(createdBody, "card"), "id");
+
+    await board.close();
+    const restartedIdentities = new IdentityService({
+      store: identityStore,
+      oauth: new FakeGitHub({
+        owner: { githubId: 1, login: "owner" },
+        bob: { githubId: 4, login: "bob" },
+      }),
+      clock: fixedClock,
+      ids: new CountingIds(100),
+      ownerId: userIdFromGithub(4),
+    });
+    const restartedCards = new CardService({
+      store: cardStore,
+      clock: fixedClock,
+      ids: new CountingIds(100),
+    });
+    board = await startBoardServer({
+      port: 0,
+      host: "127.0.0.1",
+      webRoot: home,
+      publicUrl: PUBLIC_URL,
+      identities: restartedIdentities,
+      cards: restartedCards,
+    });
+
+    const bobAsOwnerSession = await signIn("bob");
+    const bobList = await readJson(await requestJson("/v1/cards", { session: bobAsOwnerSession }));
+    expect(bobList["cards"]).toEqual([]);
+
+    const bobMove = await requestJson("/v1/cards/" + cardId + "/column", {
+      method: "PATCH",
+      session: bobAsOwnerSession,
+      body: { column: "doing" },
+    });
+    expect(bobMove.status).toBe(403);
+
+    const db = new DatabaseSync(join(home, "board.db"));
+    try {
+      const row = db.prepare("SELECT column_name FROM cards WHERE id = ?").get(cardId);
+      expect(row).toEqual({ column_name: "todo" });
+    } finally {
+      db.close();
+    }
   });
 });

@@ -96,7 +96,7 @@ export class CardService {
   moveCard(viewer: Viewer, input: { cardId: CardId; column: CardColumn }): MoveCardOutcome {
     const card = this.store.getCard(input.cardId);
     if (card === null || card.archivedAt !== null) return { ok: false, reason: "not-found" };
-    if (!viewer.isOwner && !this.store.isMember(input.cardId, viewer.user.id)) {
+    if (!this.store.isMember(input.cardId, viewer.user.id)) {
       return { ok: false, reason: "forbidden" };
     }
     const moved = this.store.updateCardColumn(input.cardId, input.column, this.clock.now().toISOString());

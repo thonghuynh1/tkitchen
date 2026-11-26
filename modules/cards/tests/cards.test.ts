@@ -210,4 +210,22 @@ describe("CardService", () => {
       db.close();
     }
   });
+
+  it("denies column moves by a configured host owner who is not a card member", () => {
+    const created = service.createCard(OWNER, { title: "Original owner card" });
+    if (!created.ok) throw new Error("expected card creation");
+    const cardId = created.card.id;
+
+    const replacementOwner = makeViewer(4, "bob", true);
+    expect(service.listCards(replacementOwner)).toEqual([]);
+    expect(service.isMember(cardId, replacementOwner.user.id)).toBe(false);
+    expect(service.moveCard(replacementOwner, { cardId, column: "doing" })).toEqual({
+      ok: false,
+      reason: "forbidden",
+    });
+
+    const listed = service.listCards(OWNER);
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?.column).toBe("todo");
+  });
 });
