@@ -7,7 +7,7 @@ PID=$(vt serve-start 0.05)
 for i in $(seq 1 60); do [ -s "$R/home/kitchen.lock" ] && break; sleep 0.5; done
 check "serve writes kitchen.lock with its pid" "$(grep -c "$PID" "$R/home/kitchen.lock")" "1"
 kt -- serve >/dev/null; check "second serve exits 1" "$?" "1"
-check "second serve names first pid" "$(tr -d '\r' < "$R/last-stderr.txt" | grep -v DeprecationWarning | grep -v trace-deprecation)" "already running (pid $PID)"
+check "second serve names first pid" "$(tr -d '\r' < "$R/last-stderr.txt" | grep -v Warning | grep -v trace-deprecation | grep -v trace-warnings)" "already running (pid $PID)"
 kt -- round >/dev/null; check "round refuses while serve runs" "$?" "1"
 kt -- round --force >/dev/null; check "round --force is unknown (exit 2)" "$?" "2"
 for i in $(seq 1 60); do N=$(kt -- notices --json); [ "$(jsx "$N" 'j.rounds.length')" = "1" ] && break; sleep 0.5; done

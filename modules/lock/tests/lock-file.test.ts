@@ -10,11 +10,14 @@ import { FileLock } from "../adapters.ts";
 
 function makeHome(): string { return mkdtempSync(join(tmpdir(), "tk-lock-")); }
 
+const NEVER_ASSIGNED_PID = 999999999;
+
 async function deadPid(): Promise<number> {
-  const child = spawn(process.execPath, ["-e", ""], { stdio: "ignore" });
-  await new Promise<void>((resolve) => { child.on("exit", () => { resolve(); }); });
-  if (child.pid === undefined) throw new Error("child had no pid");
-  return child.pid;
+  let pid = NEVER_ASSIGNED_PID;
+  for (;;) {
+    try { process.kill(pid, 0); } catch { return pid; }
+    pid -= 1;
+  }
 }
 
 interface Contender { child: ChildProcess; result: Promise<{ pid: number; result: string }>; exited: Promise<void>; }

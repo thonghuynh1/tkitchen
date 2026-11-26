@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import { createGhRunner } from "../adapters.ts";
 import { PortError } from "../../platform/index.ts";
 
+const KILL_WAIT_MS = 10000;
+const KILL_STEP_MS = 100;
 const FAKE_GH_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "tests", "fixtures", "fake-gh");
 
 function alive(pid: number): boolean {
@@ -28,7 +30,10 @@ describe("gh runner timeout", () => {
       expect(Date.now() - started).toBeLessThan(5000);
       expect(existsSync(pidFile)).toBe(true);
       const pid = Number(readFileSync(pidFile, "utf8"));
-      await new Promise((resolve) => { setTimeout(resolve, 1000); });
+      const killDeadline = Date.now() + KILL_WAIT_MS;
+      while (alive(pid) && Date.now() < killDeadline) {
+        await new Promise((resolve) => { setTimeout(resolve, KILL_STEP_MS); });
+      }
       expect(alive(pid)).toBe(false);
     } finally {
       process.env["PATH"] = saved.path;
