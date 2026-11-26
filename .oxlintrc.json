@@ -64,7 +64,7 @@
   },
   "overrides": [
     {
-      "files": ["modules/**", "cli/**", "index.ts"],
+      "files": ["modules/**", "index.ts"],
       "rules": {
         "eslint/no-magic-numbers": [
           "error",
@@ -109,7 +109,7 @@
       }
     },
     {
-      "files": ["**/tests/**", "**/*.test.*", "**/*.sim.ts", "sim/**"],
+      "files": ["modules/*/tests/**", "scripts/tests/**", "sim/**", "**/*.test.*"],
       "rules": {
         "eslint/max-lines": "off",
         "eslint/complexity": "off",

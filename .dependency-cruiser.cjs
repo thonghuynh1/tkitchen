@@ -1,7 +1,7 @@
 const MODULE_INTERNALS = "^modules/[^/]+/(lib|tests)/";
 const PURE_LIB = "^modules/[^/]+/lib/(?!adapters/)";
 const PURE_ENTRY = "^modules/[^/]+/index\\.ts$";
-const NODE_SIDE = "^modules/[^/]+/(adapters\\.ts$|lib/adapters/)|^cli/";
+const NODE_SIDE = "^modules/[^/]+/(adapters\\.ts$|lib/adapters/)";
 const DETERMINISTIC_BUILTINS = "^(node:)?crypto$";
 
 module.exports = {
@@ -43,7 +43,7 @@ module.exports = {
     },
     {
       name: "pure-lib-imports-no-adapters",
-      comment: "Outside lib/adapters a module's lib never reaches adapters or the CLI; it uses contracts.",
+      comment: "Outside lib/adapters a module's lib never reaches any adapters; it uses contracts.",
       severity: "error",
       from: { path: PURE_LIB },
       to: { path: NODE_SIDE },
@@ -82,6 +82,20 @@ module.exports = {
       severity: "error",
       from: { pathNot: "^src/components/ui/" },
       to: { path: "(^|/)@radix-ui/" },
+    },
+    {
+      name: "tests-live-in-tests-folders",
+      comment: "A test file lives in a module's tests, the checker suites, or beside the deploy scripts.",
+      severity: "error",
+      from: { path: String.raw`\.test\.ts$`, pathNot: ["^modules/[^/]+/tests/", "^scripts/tests/", "^deploy/"] },
+      to: {},
+    },
+    {
+      name: "simulations-live-in-sim",
+      comment: "Simulation files live under sim/ at the root.",
+      severity: "error",
+      from: { path: String.raw`\.sim\.ts$`, pathNot: "^sim/" },
+      to: {},
     },
     {
       name: "no-circular",

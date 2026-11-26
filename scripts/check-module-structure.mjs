@@ -60,7 +60,6 @@ function collect(root, base, files) {
 export function checkModuleStructure(root) {
   const files = {};
   collect(root, "modules", files);
-  collect(root, "cli", files);
   if (existsSync(join(root, "index.ts"))) files["index.ts"] = readFileSync(join(root, "index.ts"), "utf8");
   return { errors: inspect(files), count: Object.keys(files).filter((path) => !MODULE_TESTS.test(path)).length };
 }

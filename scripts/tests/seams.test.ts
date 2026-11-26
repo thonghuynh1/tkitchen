@@ -36,6 +36,8 @@ const CLEAN: Tree = {
   "modules/cli/lib/parse.ts": 'export const word = "serve";\n',
   "modules/cli/lib/adapters/main.ts":
     'import { GitRepoImpl } from "../../../git/adapters.ts";\nimport { run } from "../../../rounds/index.ts";\nimport { word } from "../parse.ts";\nexport const main = (): unknown => [run(new GitRepoImpl()), word];\n',
+  "sim/world.sim.ts": 'export const world = "sim";\n',
+  "deploy/windows/install.test.ts": 'export const deployed = "task";\n',
   "modules/git/web.ts": 'export const label = "git";\n',
   "src/app.ts": 'import { label } from "../modules/git/web.ts";\nexport const view = label;\n',
 };
@@ -47,7 +49,7 @@ async function violations(extra: Tree): Promise<Violation[]> {
       mkdirSync(join(root, dirname(path)), { recursive: true });
       writeFileSync(join(root, path), text);
     }
-    const result = await cruise(["modules", "index.ts", "src"], {
+    const result = await cruise(["modules", "index.ts", "src", "sim", "deploy"], {
       ...config.options,
       baseDir: root,
       validate: true,
@@ -107,6 +109,20 @@ describe("module seams", () => {
     expect(
       await rulesHit({ "modules/git/index.ts": 'export { GitRepoImpl } from "./lib/adapters/git-repo.ts";\n' }),
     ).toContain("index-stays-pure");
+  });
+  it("a test file outside a tests folder fails", async () => {
+    expect(
+      await rulesHit({
+        "modules/rounds/lib/x.test.ts": 'import { run } from "../index.ts";\nexport const t = run;\n',
+      }),
+    ).toContain("tests-live-in-tests-folders");
+  });
+  it("a simulation file outside sim fails", async () => {
+    expect(
+      await rulesHit({
+        "modules/rounds/lib/x.sim.ts": 'import { run } from "../index.ts";\nexport const t = run;\n',
+      }),
+    ).toContain("simulations-live-in-sim");
   });
   it("a circular import fails", async () => {
     expect(

@@ -30,6 +30,7 @@ Modules today: platform (Clock, Scheduler, Random, Ids, machine name, kitchen ho
 - **No clock or randomness outside adapters.** Outside `lib/adapters/`, code does not call `Date.now()`, `new Date()` with no arguments, `setTimeout`, `setInterval`, `Math.random()` or `randomUUID()`; it uses the Clock, Scheduler, Random and Ids contracts from platform.
 - **800 lines per file** under `modules/`. Split an over-budget file along its seams.
 - **No cycles, no undeclared or unresolvable imports.**
+- **Tests live in tests folders.** A module's tests sit in its `tests/`, the checker suites in `scripts/tests/`, the deploy test beside the installer in `deploy/`; simulation files sit in `sim/`. Production code never imports the testing module.
 - **Browser code stays out of Node.** Files under `src/` and any module `web.ts` import no Node built-in. Web code reaches a module only through its `web.ts`, never its `index.ts` or `adapters.ts`. `@radix-ui/*` is imported only from `src/components/ui/` (the shadcn components).
 
 ## Checks
